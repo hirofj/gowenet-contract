@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Hardhat
+cache/
+artifacts/
+
+# Environment
+.env
+.env.local
+
+# TypeChain
+typechain/
+typechain-types/
+
+# Coverage
+coverage/
+coverage.json
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

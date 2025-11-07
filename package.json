@@ -1,0 +1,16 @@
+{
+  "name": "gowenet-contract",
+  "version": "1.0.0",
+  "description": "GOWENET Blockchain Smart Contracts",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@openzeppelin/contracts": "^5.2.0",
+    "ethers": "^6.4.0",
+    "hardhat": "^2.22.0"
+  }
+}
