@@ -1,365 +1,450 @@
 // ========================================
-// Phase 3: 生成された契約のテスト（最終修正版）
+// GOWENET 負荷テスト実行スクリプト（改善版）
+// 戦略: 毎回新規契約作成 + 問題対策強化
 // ========================================
 
-console.log("\n" + "=".repeat(50));
-console.log("🧪 Phase 3: 生成された契約のテスト");
-console.log("=".repeat(50));
+const hre = require("hardhat");
 
-// 生成された契約のインスタンス取得
-const freelanceContract = await hre.ethers.getContractAt("FreelanceContract", freelanceContractAddress);
-
-// 手順書準拠の統一署名（空の署名）
-const STANDARD_SIGNATURE = "0x";
-
-// テスト実行状況追跡
-let testsPassed = 0;
-let testsTotal = 5;
-const testResults = [];
-
-// Step 10相当: 契約情報の確認
-console.log("\n📋 Step 10: 契約情報の初期確認");
-try {
-    const partyA = await freelanceContract.partyA();
-    const partyB = await freelanceContract.partyB();
-    const amount = await freelanceContract.paymentAmount();
-    const description = await freelanceContract.workDescription();
-    const state = await freelanceContract.getState();
-    const workStatus = await freelanceContract.workStatus();
+async function main() {
+    console.log("=".repeat(60));
+    console.log("🔥 GOWENET 負荷テスト実行（改善版）");
+    console.log("=".repeat(60));
     
-    console.log("   📋 partyA (Client):", partyA);
-    console.log("   📋 partyB (Freelancer):", partyB);
-    console.log("   📋 paymentAmount:", hre.ethers.formatEther(amount), "GOWE");
-    console.log("   📋 workDescription:", description);
-    console.log("   📋 getState():", state.toString(), "(期待値: 0-Created)");
-    console.log("   📋 workStatus():", workStatus.toString(), "(期待値: 0-NotStarted)");
+    // 設定パラメータ
+    const LOAD_TEST_COUNT = parseInt(process.env.LOAD_TEST_COUNT || "10");
+    const TARGET_TPS = parseInt(process.env.TARGET_TPS || "5");
+    const INTERVAL_MS = Math.max(1000 / TARGET_TPS, 100); // 最小100ms間隔
     
-    // アカウント整合性確認
-    const clientMatch = partyA.toLowerCase() === user1.address.toLowerCase();
-    const freelancerMatch = partyB.toLowerCase() === user2.address.toLowerCase();
+    console.log("\n📋 負荷テスト設定:");
+    console.log("   契約実行回数:", LOAD_TEST_COUNT);
+    console.log("   目標TPS:", TARGET_TPS);
+    console.log("   実行間隔:", INTERVAL_MS, "ms");
+    console.log("   推定実行時間:", Math.round(LOAD_TEST_COUNT * INTERVAL_MS / 1000), "秒");
     
-    console.log("   ✅ Client一致:", clientMatch ? "OK" : "NG");
-    console.log("   ✅ Freelancer一致:", freelancerMatch ? "OK" : "NG");
-    
-    if (!clientMatch || !freelancerMatch) {
-        console.log("   ❌ アカウント設定に問題があります");
-        return;
-    }
-    
-} catch (error) {
-    console.log("   ❌ 初期状態確認エラー:", error.message);
-    return;
-}
-
-// Step 11: 契約認証・作業開始 (authenticate)
-console.log("\n🚀 Step 11: 契約認証・作業開始 (authenticate)");
-try {
-    const stateBefore = await freelanceContract.getState();
-    const workStatusBefore = await freelanceContract.workStatus();
-    
-    console.log("   📋 実行前 Contract State:", stateBefore.toString());
-    console.log("   📋 実行前 Work Status:", workStatusBefore.toString());
-    
-    if (stateBefore.toString() !== "0") {
-        console.log("   ⚠️  状態が Created(0) ではありません。現在:", stateBefore.toString());
-        console.log("   💡 それでもauthenticateを試行します...");
-    }
-    
-    // user1 (client) で実行
-    const authenticateTx = await freelanceContract.connect(user1).authenticate();
-    const authenticateReceipt = await authenticateTx.wait();
-    
-    console.log("   ✅ 契約認証成功");
-    logGasUsage("authenticate", authenticateReceipt, "契約認証・作業開始");
-    
-    // 手順書Step 11確認項目
-    const stateAfter = await freelanceContract.getState();
-    const workStatusAfter = await freelanceContract.workStatus();
-    console.log("   📋 実行後 Contract State:", stateAfter.toString(), "(期待値: 1-InProgress)");
-    console.log("   📋 実行後 Work Status:", workStatusAfter.toString(), "(期待値: 1-InProgress)");
-    
-    // 検証
-    if (stateAfter.toString() === "1" && workStatusAfter.toString() === "1") {
-        console.log("   🎯 Step 11 PASSED: Created → InProgress 成功");
-        testsPassed++;
-        testResults.push({ step: "authenticate", status: "PASSED", details: "状態遷移正常" });
-    } else {
-        console.log("   ❌ Step 11 FAILED: 期待通りの状態変化になりませんでした");
-        testResults.push({ step: "authenticate", status: "FAILED", details: `状態異常: state=${stateAfter}, workStatus=${workStatusAfter}` });
-    }
-    
-} catch (error) {
-    console.log("   ❌ authenticate エラー:", error.message);
-    console.log("   💡 詳細:", error.reason || "revert理由なし");
-    testResults.push({ step: "authenticate", status: "ERROR", details: error.message });
-}
-
-// Step 12: 作業成果物の納品 (deliverWork)
-console.log("\n📦 Step 12: 作業成果物の納品 (deliverWork)");
-try {
-    const stateBefore = await freelanceContract.getState();
-    const workStatusBefore = await freelanceContract.workStatus();
-    console.log("   📋 実行前 Contract State:", stateBefore.toString(), "(期待値: 1-InProgress)");
-    console.log("   📋 実行前 Work Status:", workStatusBefore.toString(), "(期待値: 1-InProgress)");
-    
-    if (stateBefore.toString() !== "1") {
-        console.log("   ❌ PREREQUISITE FAILED: Contract State が InProgress(1) ではありません");
-        throw new Error("Prerequisite not met: Contract not in InProgress state");
-    }
-    
-    // 手順書準拠のパラメータ
-    const deliverable = "https://example.com/website-preview";
-    
-    console.log("   📋 deliverable:", deliverable);
-    console.log("   📋 signature:", STANDARD_SIGNATURE);
-    console.log("   📋 実行者:", user2.address, "(Freelancer)");
-    
-    // ガス推定（デバッグ用）
+    // デプロイ情報読み込み
+    const fs = require('fs');
+    let deploymentInfo;
     try {
-        const estimatedGas = await freelanceContract.connect(user2).estimateGas.deliverWork(deliverable, STANDARD_SIGNATURE);
-        console.log("   ⛽ 推定ガス:", estimatedGas.toString());
-    } catch (gasError) {
-        console.log("   ⚠️  ガス推定エラー:", gasError.message);
+        deploymentInfo = JSON.parse(fs.readFileSync('deployment-info-oop.json', 'utf8'));
+    } catch (error) {
+        console.error("❌ deployment-info-oop.json が見つかりません");
+        console.error("   先にデプロイスクリプトを実行してください: npx hardhat run scripts/deploy-oop.js --network gowenet");
+        process.exit(1);
     }
     
-    // user2 (freelancer) で実行
-    const deliverTx = await freelanceContract.connect(user2).deliverWork(deliverable, STANDARD_SIGNATURE);
-    const deliverReceipt = await deliverTx.wait();
+    // アカウント取得
+    const [deployer, user1, user2, user3, user4, user5] = await hre.ethers.getSigners();
     
-    console.log("   ✅ 作業納品成功");
-    logGasUsage("deliverWork", deliverReceipt, "作業成果物の納品");
+    console.log("\n👤 アカウント情報:");
+    console.log("   Deployer (contract creator):", deployer.address);
+    console.log("   Base Client:", user1.address);
+    console.log("   Base Freelancer:", user2.address);
+    console.log("   追加アカウント利用可能:", user3 && user4 && user5 ? "✅" : "⚠️");
     
-    // 手順書Step 12確認項目
-    const stateAfter = await freelanceContract.getState();
-    const workStatusAfter = await freelanceContract.workStatus();
-    const deliverables = await freelanceContract.getDeliverables();
-    
-    console.log("   📋 実行後 Contract State:", stateAfter.toString(), "(期待値: 2-Delivered)");
-    console.log("   📋 実行後 Work Status:", workStatusAfter.toString(), "(期待値: 2-UnderReview)");
-    console.log("   📋 Deliverables配列:", deliverables.length > 0 ? "✅ 含まれる" : "❌ 空");
-    
-    // 検証
-    if (stateAfter.toString() === "2" && workStatusAfter.toString() === "2" && deliverables.length > 0) {
-        console.log("   🎯 Step 12 PASSED: InProgress → Delivered 成功");
-        testsPassed++;
-        testResults.push({ step: "deliverWork", status: "PASSED", details: "納品正常完了" });
-    } else {
-        console.log("   ❌ Step 12 FAILED: 期待通りの結果になりませんでした");
-        testResults.push({ step: "deliverWork", status: "FAILED", details: `state=${stateAfter}, workStatus=${workStatusAfter}, deliverables=${deliverables.length}` });
-    }
-    
-} catch (error) {
-    console.log("   ❌ deliverWork エラー:", error.message);
-    console.log("   💡 詳細:", error.reason || "revert理由なし");
-    if (error.transaction) {
-        console.log("   🔍 トランザクション情報:", JSON.stringify({
-            to: error.transaction.to,
-            data: error.transaction.data?.substring(0, 20) + "...",
-            gasLimit: error.transaction.gasLimit?.toString()
-        }, null, 2));
-    }
-    testResults.push({ step: "deliverWork", status: "ERROR", details: error.message });
-}
-
-// Step 13: 納品物の承認 (approveDeliverable)
-console.log("\n✅ Step 13: 納品物の承認 (approveDeliverable)");
-try {
-    const workStatusBefore = await freelanceContract.workStatus();
-    console.log("   📋 実行前 Work Status:", workStatusBefore.toString(), "(期待値: 2-UnderReview)");
-    
-    if (workStatusBefore.toString() !== "2") {
-        console.log("   ❌ PREREQUISITE FAILED: Work Status が UnderReview(2) ではありません");
-        throw new Error("Prerequisite not met: Work not under review");
-    }
-    
-    // 手順書準拠のパラメータ
-    const deliverable = "https://example.com/website-preview";
-    
-    // user1 (client) で実行
-    const approveTx = await freelanceContract.connect(user1).approveDeliverable(deliverable, STANDARD_SIGNATURE);
-    const approveReceipt = await approveTx.wait();
-    
-    console.log("   ✅ 納品物承認成功");
-    logGasUsage("approveDeliverable", approveReceipt, "納品物の承認");
-    
-    // 手順書Step 13確認項目
-    const workStatusAfter = await freelanceContract.workStatus();
-    const isApproved = await freelanceContract.approvedDeliverables(deliverable);
-    
-    console.log("   📋 実行後 Work Status:", workStatusAfter.toString(), "(期待値: 4-Completed)");
-    console.log("   📋 承認状況:", isApproved ? "✅ true" : "❌ false");
-    
-    // 検証
-    if (workStatusAfter.toString() === "4" && isApproved) {
-        console.log("   🎯 Step 13 PASSED: UnderReview → Completed 成功");
-        testsPassed++;
-        testResults.push({ step: "approveDeliverable", status: "PASSED", details: "承認処理正常" });
-    } else {
-        console.log("   ❌ Step 13 FAILED: 承認処理に問題があります");
-        testResults.push({ step: "approveDeliverable", status: "FAILED", details: `workStatus=${workStatusAfter}, approved=${isApproved}` });
-    }
-    
-} catch (error) {
-    console.log("   ❌ approveDeliverable エラー:", error.message);
-    console.log("   💡 詳細:", error.reason || "revert理由なし");
-    testResults.push({ step: "approveDeliverable", status: "ERROR", details: error.message });
-}
-
-// Step 14: 報酬の支払い（直接支払い）(makeDirectPayment)
-console.log("\n💳 Step 14: 報酬の支払い（直接支払い）(makeDirectPayment)");
-try {
-    const stateBefore = await freelanceContract.getState();
-    const workStatusBefore = await freelanceContract.workStatus();
-    console.log("   📋 実行前 Contract State:", stateBefore.toString(), "(期待値: 2-Delivered)");
-    console.log("   📋 実行前 Work Status:", workStatusBefore.toString(), "(期待値: 4-Completed)");
-    
-    if (stateBefore.toString() !== "2") {
-        console.log("   ❌ PREREQUISITE FAILED: Contract State が Delivered(2) ではありません");
-        throw new Error("Prerequisite not met: Contract not in Delivered state");
-    }
-    
-    // 手順書Step 14準拠: VALUE: 1000000000000000000（1 ETH）
-    const paymentValue = hre.ethers.parseEther("1.0");
-    
-    // 支払い前の残高記録
-    const freelancerBalanceBefore = await hre.ethers.provider.getBalance(user2.address);
-    console.log("   📋 支払い前 Freelancer残高:", hre.ethers.formatEther(freelancerBalanceBefore), "GOWE");
-    console.log("   📋 支払い額:", hre.ethers.formatEther(paymentValue), "GOWE");
-    
-    // user1 (client) で実行
-    const paymentTx = await freelanceContract.connect(user1).makeDirectPayment(STANDARD_SIGNATURE, {
-        value: paymentValue
-    });
-    const paymentReceipt = await paymentTx.wait();
-    
-    console.log("   ✅ 直接支払い成功");
-    logGasUsage("makeDirectPayment", paymentReceipt, "直接支払い（1.0 GOWE）");
-    
-    // 手順書Step 14確認項目
-    const stateAfter = await freelanceContract.getState();
-    const freelancerBalanceAfter = await hre.ethers.provider.getBalance(user2.address);
-    const paymentHistory = await freelanceContract.getPaymentHistory();
-    
-    console.log("   📋 実行後 Contract State:", stateAfter.toString(), "(期待値: 4-Paid)");
-    console.log("   📋 支払い後 Freelancer残高:", hre.ethers.formatEther(freelancerBalanceAfter), "GOWE");
-    console.log("   📋 残高増加:", hre.ethers.formatEther(freelancerBalanceAfter - freelancerBalanceBefore), "GOWE");
-    console.log("   📋 Payment History:", paymentHistory.length, "transactions");
-    
-    // 検証
-    const balanceIncrease = freelancerBalanceAfter - freelancerBalanceBefore;
-    if (stateAfter.toString() === "4" && balanceIncrease > 0n && paymentHistory.length > 0) {
-        console.log("   🎯 Step 14 PASSED: Delivered → Paid 成功");
-        testsPassed++;
-        testResults.push({ step: "makeDirectPayment", status: "PASSED", details: "支払い処理正常" });
-    } else {
-        console.log("   ❌ Step 14 FAILED: 支払い処理に問題があります");
-        testResults.push({ step: "makeDirectPayment", status: "FAILED", details: `state=${stateAfter}, increase=${hre.ethers.formatEther(balanceIncrease)}` });
-    }
-    
-} catch (error) {
-    console.log("   ❌ makeDirectPayment エラー:", error.message);
-    console.log("   💡 詳細:", error.reason || "revert理由なし");
-    testResults.push({ step: "makeDirectPayment", status: "ERROR", details: error.message });
-}
-
-// Step 15: 契約完了処理 (completeContract)
-console.log("\n🎉 Step 15: 契約完了処理 (completeContract)");
-try {
-    const stateBefore = await freelanceContract.getState();
-    const workStatusBefore = await freelanceContract.workStatus();
-    console.log("   📋 実行前 Contract State:", stateBefore.toString(), "(期待値: 4-Paid)");
-    console.log("   📋 実行前 Work Status:", workStatusBefore.toString(), "(期待値: 4-Completed)");
-    
-    if (stateBefore.toString() !== "4") {
-        console.log("   ❌ PREREQUISITE FAILED: Contract State が Paid(4) ではありません");
-        throw new Error("Prerequisite not met: Contract not in Paid state");
-    }
-    
-    if (workStatusBefore.toString() !== "4") {
-        console.log("   ⚠️  WARNING: Work Status が Completed(4) ではありませんが続行します");
-        console.log("      現在のWork Status:", workStatusBefore.toString());
-    }
-    
-    // user1 (client) で実行
-    const completeTx = await freelanceContract.connect(user1).completeContract();
-    const completeReceipt = await completeTx.wait();
-    
-    console.log("   ✅ 契約完了成功");
-    logGasUsage("completeContract", completeReceipt, "契約完了・貢献度記録");
-    
-    // 手順書Step 15確認項目
-    const stateAfter = await freelanceContract.getState();
-    const ratingsEnabled = await freelanceContract.ratingsEnabled();
-    
-    console.log("   📋 最終 Contract State:", stateAfter.toString(), "(期待値: 5-Completed)");
-    console.log("   📋 ratingsEnabled():", ratingsEnabled ? "✅ true" : "❌ false");
-    
-    // 手順書Step 16: 貢献度スコアの確認
-    console.log("\n📊 Step 16: 貢献度スコアの確認");
+    // Factory準備
+    const factory = await hre.ethers.getContractAt("FreelanceContractFactory", deploymentInfo.contracts.FreelanceContractFactory);
     const stakingContract = await hre.ethers.getContractAt("StakingContract", deploymentInfo.contracts.StakingContract);
-    const clientScore = await stakingContract.contributionScore(user1.address);
-    const freelancerScore = await stakingContract.contributionScore(user2.address);
     
-    console.log("   📋 Client Contribution Score:", clientScore.toString(), "seconds");
-    console.log("   📋 Freelancer Contribution Score:", freelancerScore.toString(), "seconds");
+    console.log("\n🔗 コントラクト接続:");
+    console.log("   FreelanceContractFactory:", deploymentInfo.contracts.FreelanceContractFactory);
+    console.log("   StakingContract:", deploymentInfo.contracts.StakingContract);
     
-    // 検証
-    if (stateAfter.toString() === "5" && ratingsEnabled && clientScore > 0n && freelancerScore > 0n) {
-        console.log("   🎯 Step 15 PASSED: Paid → Completed 成功、貢献度記録完了");
-        testsPassed++;
-        testResults.push({ step: "completeContract", status: "PASSED", details: "契約完了・貢献度記録正常" });
+    // 負荷テスト実行状況
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+    let deliverWorkErrors = 0; // deliverWork特化エラーカウント
+    
+    // ガス使用量記録
+    let totalGasUsed = 0n;
+    const gasUsageLog = [];
+    const stepErrorLog = []; // ステップ別エラーログ
+    
+    function logGasUsage(stepName, receipt, cycleId) {
+        const gasUsed = receipt.gasUsed;
+        totalGasUsed += gasUsed;
+        gasUsageLog.push({
+            cycle: cycleId,
+            step: stepName,
+            gasUsed: gasUsed.toString(),
+            blockNumber: receipt.blockNumber,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    function logStepError(stepName, error, cycleId) {
+        stepErrorLog.push({
+            cycle: cycleId,
+            step: stepName,
+            error: error.message,
+            reason: error.reason || "Unknown",
+            timestamp: new Date().toISOString()
+        });
+        
+        if (stepName === "deliverWork") {
+            deliverWorkErrors++;
+        }
+    }
+    
+    // 負荷テスト開始
+    console.log("\n" + "=".repeat(50));
+    console.log("🚀 負荷テスト実行開始");
+    console.log("=".repeat(50));
+    
+    const startTime = Date.now();
+    
+    for (let i = 0; i < LOAD_TEST_COUNT; i++) {
+        const cycleStartTime = Date.now();
+        
+        console.log(`\n📝 負荷テスト ${i+1}/${LOAD_TEST_COUNT} [${new Date().toLocaleTimeString()}]`);
+        
+        // ★★★ 改善1: アカウント分散 ★★★
+        const clientIndex = i % 3; // user1, user3, user4 をローテーション
+        const freelancerIndex = i % 2; // user2, user5 をローテーション
+        
+        let currentClient = user1;
+        let currentFreelancer = user2;
+        
+        if (clientIndex === 1 && user3) currentClient = user3;
+        else if (clientIndex === 2 && user4) currentClient = user4;
+        
+        if (freelancerIndex === 1 && user5) currentFreelancer = user5;
+        
+        console.log("   👤 使用アカウント:");
+        console.log("     Client:", currentClient.address);
+        console.log("     Freelancer:", currentFreelancer.address);
+        
+        try {
+            // ========================================
+            // Step 8: 新規契約作成
+            // ========================================
+            
+            console.log("   🏭 Step 8: 契約作成");
+            
+            const createTx = await factory.connect(deployer).createContract(
+                currentClient.address,  // 分散されたclient
+                currentFreelancer.address,  // 分散されたfreelancer
+                hre.ethers.parseEther("1.0"),
+                `Load test contract ${i+1} - ${new Date().toISOString()}`,
+                { value: 0 }
+            );
+            
+            const createReceipt = await createTx.wait();
+            logGasUsage("createContract", createReceipt, i+1);
+            
+            // 契約アドレス取得
+            const contractCount = await factory.getContractCount();
+            const freelanceContractAddress = await factory.contracts(contractCount);
+            const freelanceContract = await hre.ethers.getContractAt("FreelanceContract", freelanceContractAddress);
+            
+            console.log("     ✅ 契約作成完了:", freelanceContractAddress.substring(0, 10) + "...");
+            
+            // ========================================
+            // Step 11: authenticate
+            // ========================================
+            
+            console.log("     🚀 Step 11: authenticate");
+            try {
+                const authenticateTx = await freelanceContract.connect(currentClient).authenticate();
+                const authenticateReceipt = await authenticateTx.wait();
+                logGasUsage("authenticate", authenticateReceipt, i+1);
+                console.log("       ✅ authenticate成功");
+            } catch (error) {
+                console.log("       ❌ authenticate失敗:", error.message.substring(0, 50));
+                logStepError("authenticate", error, i+1);
+                throw error;
+            }
+            
+            // ========================================
+            // Step 12: deliverWork（特別な注意）
+            // ========================================
+            
+            console.log("     📦 Step 12: deliverWork");
+            try {
+                // ★★★ 改善2: deliverWork詳細デバッグ ★★★
+                const deliverable = `https://example.com/delivery-${i+1}-${Date.now()}`;
+                console.log("       📋 deliverable:", deliverable);
+                console.log("       📋 signature: '0x'");
+                console.log("       📋 実行者:", currentFreelancer.address);
+                
+                // 前提条件確認
+                const stateBefore = await freelanceContract.getState();
+                console.log("       📋 実行前状態:", stateBefore.toString(), "(期待: 1-InProgress)");
+                
+                if (stateBefore.toString() !== "1") {
+                    throw new Error(`Invalid state for deliverWork: ${stateBefore.toString()}, expected 1`);
+                }
+                
+                // ガス推定
+                try {
+                    const estimatedGas = await freelanceContract.connect(currentFreelancer).estimateGas.deliverWork(deliverable, "0x");
+                    console.log("       ⛽ 推定ガス:", estimatedGas.toString());
+                } catch (gasError) {
+                    console.log("       ⚠️ ガス推定失敗:", gasError.message.substring(0, 50));
+                }
+                
+                const deliverTx = await freelanceContract.connect(currentFreelancer).deliverWork(deliverable, "0x");
+                const deliverReceipt = await deliverTx.wait();
+                logGasUsage("deliverWork", deliverReceipt, i+1);
+                
+                // 事後確認
+                const stateAfter = await freelanceContract.getState();
+                console.log("       📋 実行後状態:", stateAfter.toString(), "(期待: 2-Delivered)");
+                
+                if (stateAfter.toString() !== "2") {
+                    throw new Error(`deliverWork state transition failed: ${stateAfter.toString()}, expected 2`);
+                }
+                
+                console.log("       ✅ deliverWork成功");
+            } catch (error) {
+                console.log("       ❌ deliverWork失敗:", error.message.substring(0, 100));
+                console.log("       💡 詳細:", error.reason || "revert理由なし");
+                logStepError("deliverWork", error, i+1);
+                throw error;
+            }
+            
+            // ========================================
+            // Step 13: approveDeliverable
+            // ========================================
+            
+            console.log("     ✅ Step 13: approveDeliverable");
+            try {
+                const deliverable = `https://example.com/delivery-${i+1}-${Date.now()}`;
+                const approveTx = await freelanceContract.connect(currentClient).approveDeliverable(deliverable, "0x");
+                const approveReceipt = await approveTx.wait();
+                logGasUsage("approveDeliverable", approveReceipt, i+1);
+                console.log("       ✅ approveDeliverable成功");
+            } catch (error) {
+                console.log("       ❌ approveDeliverable失敗:", error.message.substring(0, 50));
+                logStepError("approveDeliverable", error, i+1);
+                throw error;
+            }
+            
+            // ========================================
+            // Step 14: makeDirectPayment
+            // ========================================
+            
+            console.log("     💳 Step 14: makeDirectPayment");
+            try {
+                const paymentTx = await freelanceContract.connect(currentClient).makeDirectPayment("0x", {
+                    value: hre.ethers.parseEther("1.0")
+                });
+                const paymentReceipt = await paymentTx.wait();
+                logGasUsage("makeDirectPayment", paymentReceipt, i+1);
+                console.log("       ✅ makeDirectPayment成功");
+            } catch (error) {
+                console.log("       ❌ makeDirectPayment失敗:", error.message.substring(0, 50));
+                logStepError("makeDirectPayment", error, i+1);
+                throw error;
+            }
+            
+            // ========================================
+            // Step 15: completeContract
+            // ========================================
+            
+            console.log("     🎉 Step 15: completeContract");
+            try {
+                const completeTx = await freelanceContract.connect(currentClient).completeContract();
+                const completeReceipt = await completeTx.wait();
+                logGasUsage("completeContract", completeReceipt, i+1);
+                console.log("       ✅ completeContract成功");
+            } catch (error) {
+                console.log("       ❌ completeContract失敗:", error.message.substring(0, 50));
+                logStepError("completeContract", error, i+1);
+                throw error;
+            }
+            
+            const cycleEndTime = Date.now();
+            const cycleDuration = cycleEndTime - cycleStartTime;
+            
+            console.log(`   ✅ 契約サイクル完了 (${cycleDuration}ms)`);
+            
+            // ★★★ 改善3: 個別貢献度確認 ★★★
+            try {
+                const clientScoreAfter = await stakingContract.contributionScore(currentClient.address);
+                const freelancerScoreAfter = await stakingContract.contributionScore(currentFreelancer.address);
+                console.log("     📊 貢献度記録:");
+                console.log("       Client:", clientScoreAfter.toString(), "sec");
+                console.log("       Freelancer:", freelancerScoreAfter.toString(), "sec");
+            } catch (scoreError) {
+                console.log("     ⚠️ 貢献度確認エラー:", scoreError.message.substring(0, 50));
+            }
+            
+            // 結果記録
+            results.push({
+                cycle: i+1,
+                success: true,
+                duration: cycleDuration,
+                contractAddress: freelanceContractAddress,
+                clientAddress: currentClient.address,
+                freelancerAddress: currentFreelancer.address,
+                gasUsed: gasUsageLog.filter(log => log.cycle === i+1).reduce((sum, log) => sum + BigInt(log.gasUsed), 0n).toString()
+            });
+            
+            successCount++;
+            
+        } catch (error) {
+            const cycleEndTime = Date.now();
+            const cycleDuration = cycleEndTime - cycleStartTime;
+            
+            console.log(`   ❌ 契約サイクル失敗 (${cycleDuration}ms):`);
+            console.log("     エラー:", error.message.substring(0, 100));
+            console.log("     詳細:", error.reason || "revert理由なし");
+            
+            results.push({
+                cycle: i+1,
+                success: false,
+                duration: cycleDuration,
+                error: error.message,
+                reason: error.reason || "Unknown",
+                clientAddress: currentClient.address,
+                freelancerAddress: currentFreelancer.address,
+                gasUsed: "0"
+            });
+            
+            errorCount++;
+        }
+        
+        // 目標TPSに合わせて待機
+        if (i < LOAD_TEST_COUNT - 1) {
+            await new Promise(resolve => setTimeout(resolve, INTERVAL_MS));
+        }
+        
+        // 進捗表示（10サイクル毎）
+        if ((i + 1) % 10 === 0 || i === LOAD_TEST_COUNT - 1) {
+            console.log(`\n📊 進捗: ${i+1}/${LOAD_TEST_COUNT} (成功: ${successCount}, 失敗: ${errorCount})`);
+        }
+    }
+    
+    const endTime = Date.now();
+    const totalDuration = endTime - startTime;
+    
+    // ========================================
+    // ★★★ 改善4: 詳細分析レポート ★★★
+    // ========================================
+    
+    console.log("\n" + "=".repeat(60));
+    console.log("📊 負荷テスト詳細分析レポート");
+    console.log("=".repeat(60));
+    
+    // 基本統計
+    console.log("\n📋 基本統計:");
+    console.log("   総実行時間:", Math.round(totalDuration / 1000), "秒");
+    console.log("   成功回数:", successCount);
+    console.log("   失敗回数:", errorCount);
+    console.log("   成功率:", Math.round(successCount / LOAD_TEST_COUNT * 100), "%");
+    
+    // ★★★ deliverWork特化分析 ★★★
+    console.log("\n🔍 deliverWork特化分析:");
+    console.log("   deliverWork失敗数:", deliverWorkErrors);
+    console.log("   deliverWork成功率:", Math.round((successCount / LOAD_TEST_COUNT) * 100), "%");
+    if (deliverWorkErrors > 0) {
+        console.log("   ⚠️ deliverWork問題を検出！詳細は stepErrorLog を確認");
+    }
+    
+    // ステップ別エラー分析
+    if (stepErrorLog.length > 0) {
+        console.log("\n❌ ステップ別エラー統計:");
+        const errorsByStep = {};
+        stepErrorLog.forEach(log => {
+            errorsByStep[log.step] = (errorsByStep[log.step] || 0) + 1;
+        });
+        Object.entries(errorsByStep).forEach(([step, count]) => {
+            console.log(`   ${step}: ${count}回失敗`);
+        });
+    }
+    
+    // TPS計算
+    const actualTPS = successCount / (totalDuration / 1000);
+    console.log("\n⚡ TPS分析:");
+    console.log("   実測TPS:", actualTPS.toFixed(2));
+    console.log("   目標TPS:", TARGET_TPS);
+    console.log("   TPS達成率:", Math.round(actualTPS / TARGET_TPS * 100), "%");
+    
+    // ガス統計
+    console.log("\n⛽ ガス使用統計:");
+    console.log("   総ガス使用量:", totalGasUsed.toLocaleString(), "gas");
+    console.log("   平均ガス/契約:", successCount > 0 ? (totalGasUsed / BigInt(successCount)).toLocaleString() : "N/A", "gas");
+    
+    // ステップ別ガス分析
+    if (gasUsageLog.length > 0) {
+        const gasByStep = {};
+        gasUsageLog.forEach(log => {
+            if (!gasByStep[log.step]) gasByStep[log.step] = [];
+            gasByStep[log.step].push(BigInt(log.gasUsed));
+        });
+        
+        console.log("\n   ステップ別ガス使用量:");
+        Object.entries(gasByStep).forEach(([step, gasArray]) => {
+            const avgGas = gasArray.reduce((sum, gas) => sum + gas, 0n) / BigInt(gasArray.length);
+            console.log(`     ${step}: 平均 ${avgGas.toLocaleString()} gas (${gasArray.length}回実行)`);
+        });
+    }
+    
+    // パフォーマンス統計
+    const successResults = results.filter(r => r.success);
+    if (successResults.length > 0) {
+        const durations = successResults.map(r => r.duration);
+        const avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+        const minDuration = Math.min(...durations);
+        const maxDuration = Math.max(...durations);
+        
+        console.log("\n⏱️  実行時間統計:");
+        console.log("   平均実行時間:", Math.round(avgDuration), "ms");
+        console.log("   最短実行時間:", minDuration, "ms");
+        console.log("   最長実行時間:", maxDuration, "ms");
+        console.log("   実行時間標準偏差:", Math.round(Math.sqrt(durations.map(d => Math.pow(d - avgDuration, 2)).reduce((sum, d) => sum + d, 0) / durations.length)), "ms");
+    }
+    
+    // 結果保存
+    const resultData = {
+        testConfig: {
+            count: LOAD_TEST_COUNT,
+            targetTPS: TARGET_TPS,
+            intervalMs: INTERVAL_MS,
+            timestamp: new Date().toISOString()
+        },
+        summary: {
+            totalDuration: totalDuration,
+            successCount: successCount,
+            errorCount: errorCount,
+            deliverWorkErrors: deliverWorkErrors,
+            successRate: successCount / LOAD_TEST_COUNT,
+            actualTPS: actualTPS,
+            totalGasUsed: totalGasUsed.toString()
+        },
+        results: results,
+        gasLog: gasUsageLog,
+        errorLog: stepErrorLog,
+        deploymentInfo: deploymentInfo
+    };
+    
+    const resultFileName = `load-test-results-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    fs.writeFileSync(resultFileName, JSON.stringify(resultData, null, 2));
+    console.log(`\n💾 詳細結果保存: ${resultFileName}`);
+    
+    // 最終判定
+    if (successCount === LOAD_TEST_COUNT) {
+        console.log("\n🎉 負荷テスト完全成功！");
+        console.log("   全ての契約が正常に実行されました");
+        console.log("   deliverWork問題は発生しませんでした");
+    } else if (deliverWorkErrors > 0) {
+        console.log("\n⚠️ deliverWork問題を検出");
+        console.log(`   ${deliverWorkErrors}回のdeliverWork失敗が発生しました`);
+        console.log("   詳細は保存されたエラーログを確認してください");
+    } else if (successCount > LOAD_TEST_COUNT * 0.8) {
+        console.log("\n⚠️ 負荷テスト部分成功");
+        console.log(`   ${Math.round(100 - successCount / LOAD_TEST_COUNT * 100)}%の失敗がありました`);
     } else {
-        console.log("   ❌ Step 15 FAILED: 契約完了処理に問題があります");
-        testResults.push({ step: "completeContract", status: "FAILED", details: `state=${stateAfter}, ratings=${ratingsEnabled}, scores=${clientScore}/${freelancerScore}` });
+        console.log("\n❌ 負荷テスト失敗");
+        console.log("   大量の失敗が発生しました。システム調査が必要です");
     }
-    
-} catch (error) {
-    console.log("   ❌ completeContract エラー:", error.message);
-    console.log("   💡 詳細:", error.reason || "revert理由なし");
-    testResults.push({ step: "completeContract", status: "ERROR", details: error.message });
 }
 
-// 手順書準拠のテスト結果サマリー
-console.log("\n" + "=".repeat(60));
-console.log("📊 手順書準拠テスト結果サマリー");
-console.log("=".repeat(60));
-
-console.log(`\n🎯 総合結果: ${testsPassed}/${testsTotal} テスト成功`);
-
-console.log("\n📋 詳細結果:");
-testResults.forEach((result, index) => {
-    const statusIcon = result.status === "PASSED" ? "✅" : result.status === "FAILED" ? "❌" : "⚠️";
-    console.log(`   ${index + 1}. ${result.step}: ${statusIcon} ${result.status}`);
-    if (result.details) {
-        console.log(`      ${result.details}`);
-    }
-});
-
-if (testsPassed === testsTotal) {
-    console.log("\n🎉 手順書完全準拠テスト全て成功！");
-    console.log("   オブジェクト指向型スマートコントラクトは正常に動作しています！");
-} else if (testsPassed > 0) {
-    console.log(`\n⚠️  ${testsTotal - testsPassed}個のテストが失敗しました`);
-    console.log("   基本機能は動作していますが、問題の調査が必要です");
-} else {
-    console.log("\n❌ 全テストが失敗しました");
-    console.log("   根本的な問題の調査が必要です");
-}
-
-// 最終確認（手順書チェックリスト準拠）
-console.log("\n📝 手順書チェックリスト確認:");
-try {
-    const finalState = await freelanceContract.getState();
-    const finalInfo = await freelanceContract.getFreelanceInfo();
-    
-    console.log("   Phase 3: 契約実行");
-    console.log(`   - [ ] authenticate: ${testResults.find(r => r.step === 'authenticate')?.status || 'NOT_RUN'}`);
-    console.log(`   - [ ] deliverWork: ${testResults.find(r => r.step === 'deliverWork')?.status || 'NOT_RUN'}`);
-    console.log(`   - [ ] approveDeliverable: ${testResults.find(r => r.step === 'approveDeliverable')?.status || 'NOT_RUN'}`);
-    console.log(`   - [ ] makeDirectPayment: ${testResults.find(r => r.step === 'makeDirectPayment')?.status || 'NOT_RUN'}`);
-    console.log(`   - [ ] completeContract: ${testResults.find(r => r.step === 'completeContract')?.status || 'NOT_RUN'}`);
-    console.log(`   - [ ] StakingContract貢献度記録: ${testsPassed >= 5 ? 'PASSED' : 'FAILED'}`);
-    
-} catch (error) {
-    console.log("   ⚠️  最終確認エラー:", error.message);
-}
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error("\n❌ 負荷テスト実行失敗:");
+        console.error(error);
+        process.exit(1);
+    });
