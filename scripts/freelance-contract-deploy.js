@@ -1,71 +1,14 @@
-const hre = require("hardhat");
+// ========================================
+// Phase 1: 独立モジュールのデプロイ（修正版）
+// ========================================
 
-async function main() {
-    console.log("=".repeat(60));
-    console.log("🚀 GOWENET オブジェクト指向型スマートコントラクト デプロイ専用");
-    console.log("=".repeat(60));
+console.log("\n" + "=".repeat(50));
+console.log("📦 Phase 1: 独立モジュールのデプロイ");
+console.log("=".repeat(50));
 
-    // ========================================
-    // アカウント情報取得
-    // ========================================
-    
-    const [deployer, user1, user2] = await hre.ethers.getSigners();
-    
-    console.log("\n📋 アカウント情報:");
-    console.log("  Deployer (gowenet-owner):", deployer.address);
-    console.log("  User1 (client):", user1.address);
-    console.log("  User2 (freelancer):", user2.address);
-    
-    // 残高確認
-    const deployerBalance = await hre.ethers.provider.getBalance(deployer.address);
-    const user1Balance = await hre.ethers.provider.getBalance(user1.address);
-    const user2Balance = await hre.ethers.provider.getBalance(user2.address);
-    
-    console.log("\n💰 残高情報:");
-    console.log("  Deployer:", hre.ethers.formatEther(deployerBalance), "GOWE");
-    console.log("  User1:", hre.ethers.formatEther(user1Balance), "GOWE");
-    console.log("  User2:", hre.ethers.formatEther(user2Balance), "GOWE");
-    
-    // デプロイ結果を記録するオブジェクト
-    const deployedContracts = {};
-    const gasUsageLog = [];
-    let totalGasUsed = 0n;
-    
-    // ガス使用量記録用ヘルパー関数
-    function logGasUsage(stepName, receipt, description = "") {
-        const gasUsed = receipt.gasUsed;
-        const gasPrice = receipt.gasPrice || receipt.effectiveGasPrice || 0n;
-        const gasCost = gasUsed * gasPrice;
-        
-        totalGasUsed += gasUsed;
-        
-        const gasRecord = {
-            step: stepName,
-            description: description,
-            gasUsed: gasUsed.toString(),
-            gasPrice: gasPrice.toString(),
-            gasCostWei: gasCost.toString(),
-            gasCostGOWE: hre.ethers.formatEther(gasCost),
-            transactionHash: receipt.hash,
-            blockNumber: receipt.blockNumber
-        };
-        
-        gasUsageLog.push(gasRecord);
-        
-        console.log(`   ⛽ ガス使用量: ${gasUsed.toLocaleString()} gas (${hre.ethers.formatEther(gasCost)} GOWE)`);
-        return gasRecord;
-    }
-    
-    // ========================================
-    // Phase 1: 独立モジュールのデプロイ
-    // ========================================
-    
-    console.log("\n" + "=".repeat(50));
-    console.log("📦 Phase 1: 独立モジュールのデプロイ");
-    console.log("=".repeat(50));
-    
-    // 1. SignatureVerifier
-    console.log("\n🔐 1. SignatureVerifier をデプロイ中...");
+// 1. SignatureVerifier
+console.log("\n🔐 Step 1: SignatureVerifier をデプロイ中...");
+try {
     const SignatureVerifier = await hre.ethers.getContractFactory("SignatureVerifier");
     const signatureVerifier = await SignatureVerifier.deploy();
     await signatureVerifier.waitForDeployment();
@@ -80,9 +23,14 @@ async function main() {
         const receipt1 = await deployTx1.wait();
         logGasUsage("SignatureVerifier Deploy", receipt1, "デジタル署名検証モジュール");
     }
-    
-    // 2. ContractBase
-    console.log("\n📊 2. ContractBase をデプロイ中...");
+} catch (error) {
+    console.error("❌ SignatureVerifier デプロイ失敗:", error.message);
+    throw error;
+}
+
+// 2. ContractBase
+console.log("\n📊 Step 2: ContractBase をデプロイ中...");
+try {
     const ContractBase = await hre.ethers.getContractFactory("ContractBase");
     const contractBase = await ContractBase.deploy();
     await contractBase.waitForDeployment();
@@ -98,12 +46,26 @@ async function main() {
         logGasUsage("ContractBase Deploy", receipt2, "状態管理モジュール");
     }
     
-    // ContractBase初期状態確認
+    // 手順書Step 2確認項目: owner確認（重要！）
+    const owner = await contractBase.owner();
+    console.log("   📋 ContractBase owner:", owner);
+    console.log("   📋 Deployer address:", deployer.address);
+    console.log("   📋 Owner確認:", owner.toLowerCase() === deployer.address.toLowerCase() ? "✅ 正しい" : "❌ 不正");
     
-    // 3. StakingContract
-    console.log("\n🎯 3. StakingContract をデプロイ中...");
+    if (owner.toLowerCase() !== deployer.address.toLowerCase()) {
+        throw new Error("ContractBase owner verification failed");
+    }
+    
+} catch (error) {
+    console.error("❌ ContractBase デプロイ失敗:", error.message);
+    throw error;
+}
+
+// 3. StakingContract
+console.log("\n🎯 Step 3: StakingContract をデプロイ中...");
+try {
     const StakingContract = await hre.ethers.getContractFactory("StakingContract");
-    const stakingContract = await StakingContract.deploy("1000000000000000");
+    const stakingContract = await StakingContract.deploy("1000000000000000"); // 手順書準拠
     await stakingContract.waitForDeployment();
     
     const stakingContractAddress = await stakingContract.getAddress();
@@ -117,27 +79,35 @@ async function main() {
         logGasUsage("StakingContract Deploy", receipt3, "ステーキング・貢献度管理");
     }
     
-    // StakingContract設定確認
+    // 手順書Step 3確認項目: 設定確認
     const rewardRate = await stakingContract.rewardRate();
     console.log("   📋 RewardRate:", rewardRate.toString());
+    console.log("   📋 期待値: 1000000000000000");
+    console.log("   📋 設定確認:", rewardRate.toString() === "1000000000000000" ? "✅ 正しい" : "❌ 不正");
     
-    // ========================================
-    // Phase 2: 依存モジュールのデプロイ
-    // ========================================
-    
-    console.log("\n" + "=".repeat(50));
-    console.log("📦 Phase 2: 依存モジュールのデプロイ");
-    console.log("=".repeat(50));
-    
-    // 4. PaymentFlow (SignatureVerifier + ContractBase依存)
-    console.log("\n💳 4. PaymentFlow をデプロイ中...");
-    console.log("   📋 引数: SignatureVerifier =", signatureVerifierAddress);
-    console.log("   📋 引数: StateManager =", contractBaseAddress);
+} catch (error) {
+    console.error("❌ StakingContract デプロイ失敗:", error.message);
+    throw error;
+}
+
+// ========================================
+// Phase 2: 依存モジュールのデプロイ（修正版）
+// ========================================
+
+console.log("\n" + "=".repeat(50));
+console.log("📦 Phase 2: 依存モジュールのデプロイ");
+console.log("=".repeat(50));
+
+// 4. PaymentFlow (SignatureVerifier + ContractBase依存)
+console.log("\n💳 Step 4: PaymentFlow をデプロイ中...");
+try {
+    console.log("   📋 引数: SignatureVerifier =", deployedContracts.SignatureVerifier);
+    console.log("   📋 引数: StateManager =", deployedContracts.ContractBase);
     
     const PaymentFlow = await hre.ethers.getContractFactory("PaymentFlow");
     const paymentFlow = await PaymentFlow.deploy(
-        signatureVerifierAddress,
-        contractBaseAddress
+        deployedContracts.SignatureVerifier,
+        deployedContracts.ContractBase
     );
     await paymentFlow.waitForDeployment();
     
@@ -152,10 +122,21 @@ async function main() {
         logGasUsage("PaymentFlow Deploy", receipt4, "支払い処理・エスクロー");
     }
     
-    // 5. FreelanceContractFactory
-    console.log("\n🏭 5. FreelanceContractFactory をデプロイ中...");
+    // 設定確認
+    const owner = await paymentFlow.owner();
+    console.log("   📋 PaymentFlow owner:", owner);
+    console.log("   📋 Owner確認:", owner.toLowerCase() === deployer.address.toLowerCase() ? "✅ 正しい" : "❌ 不正");
+    
+} catch (error) {
+    console.error("❌ PaymentFlow デプロイ失敗:", error.message);
+    throw error;
+}
+
+// 5. FreelanceContractFactory
+console.log("\n🏭 Step 5: FreelanceContractFactory をデプロイ中...");
+try {
     const FreelanceContractFactory = await hre.ethers.getContractFactory("FreelanceContractFactory");
-    const factory = await FreelanceContractFactory.deploy(0); // creationFee = 0
+    const factory = await FreelanceContractFactory.deploy(0); // creationFee = 0（手順書準拠）
     await factory.waitForDeployment();
     
     const factoryAddress = await factory.getAddress();
@@ -169,178 +150,161 @@ async function main() {
         logGasUsage("FreelanceContractFactory Deploy", receipt5, "ファクトリーパターン実装");
     }
     
-    // ========================================
-    // Phase 3: Factory設定（重要）
-    // ========================================
+    // 設定確認
+    const creationFee = await factory.creationFee();
+    console.log("   📋 CreationFee:", creationFee.toString());
+    console.log("   📋 期待値: 0");
+    console.log("   📋 設定確認:", creationFee.toString() === "0" ? "✅ 正しい" : "❌ 不正");
     
-    console.log("\n" + "=".repeat(50));
-    console.log("⚙️  Phase 3: Factory設定");
-    console.log("=".repeat(50));
+} catch (error) {
+    console.error("❌ FreelanceContractFactory デプロイ失敗:", error.message);
+    throw error;
+}
+
+// ========================================
+// Phase 3: Factory設定（修正版・手順書完全準拠）
+// ========================================
+
+console.log("\n" + "=".repeat(50));
+console.log("⚙️  Phase 3: Factory設定");
+console.log("=".repeat(50));
+
+// 6. registerModules（手順書Step 6）
+console.log("\n🔗 Step 6: registerModules 実行中...");
+try {
+    console.log("   📋 ContractBase:", deployedContracts.ContractBase);
+    console.log("   📋 PaymentFlow:", deployedContracts.PaymentFlow);
+    console.log("   📋 SignatureVerifier:", deployedContracts.SignatureVerifier);
     
-    // 6. registerModules
-    console.log("\n🔗 6. registerModules 実行中...");
-    console.log("   📋 ContractBase:", contractBaseAddress);
-    console.log("   📋 PaymentFlow:", paymentFlowAddress);
-    console.log("   📋 SignatureVerifier:", signatureVerifierAddress);
-    
+    const factory = await hre.ethers.getContractAt("FreelanceContractFactory", deployedContracts.FreelanceContractFactory);
     const registerTx = await factory.registerModules(
-        contractBaseAddress,
-        paymentFlowAddress,
-        signatureVerifierAddress
+        deployedContracts.ContractBase,
+        deployedContracts.PaymentFlow,
+        deployedContracts.SignatureVerifier
     );
     const registerReceipt = await registerTx.wait();
     console.log("✅ registerModules 完了");
     logGasUsage("registerModules", registerReceipt, "モジュール登録");
     
-    // 7. setStakingModule
-    console.log("\n🎯 7. setStakingModule 実行中...");
-    console.log("   📋 StakingContract:", stakingContractAddress);
+    // 手順書Step 6確認項目
+    const registeredModules = await factory.getRegisteredModules();
+    console.log("\n   📋 登録確認:");
+    console.log("   ContractBase:", registeredModules[0] === deployedContracts.ContractBase ? "✅ 正しい" : "❌ 不正");
+    console.log("   PaymentFlow:", registeredModules[1] === deployedContracts.PaymentFlow ? "✅ 正しい" : "❌ 不正");
+    console.log("   SignatureVerifier:", registeredModules[2] === deployedContracts.SignatureVerifier ? "✅ 正しい" : "❌ 不正");
     
-    const setStakingTx = await factory.setStakingModule(stakingContractAddress);
+} catch (error) {
+    console.error("❌ registerModules 失敗:", error.message);
+    throw error;
+}
+
+// 7. setStakingModule（手順書Step 7）
+console.log("\n🎯 Step 7: setStakingModule 実行中...");
+try {
+    console.log("   📋 StakingContract:", deployedContracts.StakingContract);
+    
+    const factory = await hre.ethers.getContractAt("FreelanceContractFactory", deployedContracts.FreelanceContractFactory);
+    const setStakingTx = await factory.setStakingModule(deployedContracts.StakingContract);
     const setStakingReceipt = await setStakingTx.wait();
     console.log("✅ setStakingModule 完了");
     logGasUsage("setStakingModule", setStakingReceipt, "ステーキングモジュール設定");
     
-    // 8. オーナーシップ移譲（重要）
-    console.log("\n👤 8. オーナーシップ移譲実行中...");
+    // 手順書Step 7確認項目
+    const stakingModule = await factory.stakingContractModule();
+    console.log("   📋 StakingModule登録確認:", stakingModule === deployedContracts.StakingContract ? "✅ 正しい" : "❌ 不正");
+    
+} catch (error) {
+    console.error("❌ setStakingModule 失敗:", error.message);
+    throw error;
+}
+
+// 7.5 & 7.6: オーナーシップ移譲（手順書Step 7.5-7.6）
+console.log("\n👤 Step 7.5-7.6: オーナーシップ移譲実行中...");
+try {
+    const contractBase = await hre.ethers.getContractAt("ContractBase", deployedContracts.ContractBase);
+    const paymentFlow = await hre.ethers.getContractAt("PaymentFlow", deployedContracts.PaymentFlow);
+    const factoryAddress = deployedContracts.FreelanceContractFactory;
     
     console.log("   📋 ContractBase ownership → Factory");
+    console.log("      移譲先:", factoryAddress);
     const transferOwnership1Tx = await contractBase.transferOwnership(factoryAddress);
     const transferOwnership1Receipt = await transferOwnership1Tx.wait();
     console.log("   ✅ ContractBase ownership 移譲完了");
     logGasUsage("transferOwnership ContractBase", transferOwnership1Receipt, "ContractBase所有権移譲");
     
     console.log("   📋 PaymentFlow ownership → Factory");
+    console.log("      移譲先:", factoryAddress);
     const transferOwnership2Tx = await paymentFlow.transferOwnership(factoryAddress);
     const transferOwnership2Receipt = await transferOwnership2Tx.wait();
     console.log("   ✅ PaymentFlow ownership 移譲完了");
     logGasUsage("transferOwnership PaymentFlow", transferOwnership2Receipt, "PaymentFlow所有権移譲");
     
-    // ========================================
-    // Phase 4: 設定確認
-    // ========================================
+    // 手順書Step 7.5-7.6確認項目
+    const contractBaseOwner = await contractBase.owner();
+    const paymentFlowOwner = await paymentFlow.owner();
+    console.log("\n   📋 オーナーシップ移譲確認:");
+    console.log("   ContractBase owner:", contractBaseOwner === factoryAddress ? "✅ Factory" : "❌ 失敗");
+    console.log("   PaymentFlow owner:", paymentFlowOwner === factoryAddress ? "✅ Factory" : "❌ 失敗");
     
-    console.log("\n" + "=".repeat(50));
-    console.log("🔍 Phase 4: 設定確認");
-    console.log("=".repeat(50));
-    
-    try {
-        // Factory設定確認
-        const registeredModules = await factory.getRegisteredModules();
-        console.log("\n📋 登録されたモジュール:");
-        console.log("   ContractBase:", registeredModules[0]);
-        console.log("   PaymentFlow:", registeredModules[1]);
-        console.log("   SignatureVerifier:", registeredModules[2]);
-        
-        // オーナーシップ確認
-        const contractBaseOwner = await contractBase.owner();
-        const paymentFlowOwner = await paymentFlow.owner();
-        console.log("\n👤 オーナーシップ確認:");
-        console.log("   ContractBase owner:", contractBaseOwner);
-        console.log("   PaymentFlow owner:", paymentFlowOwner);
-        console.log("   Factory address:", factoryAddress);
-        console.log("   オーナーシップ移譲:", contractBaseOwner === factoryAddress && paymentFlowOwner === factoryAddress ? "✅ 成功" : "❌ 失敗");
-        
-    } catch (error) {
-        console.log("⚠️  設定確認でエラー:", error.message);
+    if (contractBaseOwner !== factoryAddress || paymentFlowOwner !== factoryAddress) {
+        throw new Error("Ownership transfer verification failed");
     }
     
-    // ========================================
-    // Phase 5: 結果保存
-    // ========================================
-    
-    console.log("\n" + "=".repeat(50));
-    console.log("💾 Phase 5: デプロイ結果保存");
-    console.log("=".repeat(50));
-    
-    const deploymentInfo = {
-        architecture: "object_oriented",
-        network: "gowenet",
-        chainId: 98888,
-        deployer: deployer.address,
-        deploymentTime: new Date().toISOString(),
-        accounts: {
-            deployer: deployer.address,
-            client: user1.address,
-            freelancer: user2.address
-        },
-        contracts: deployedContracts,
-        balances: {
-            deployer: hre.ethers.formatEther(deployerBalance),
-            user1: hre.ethers.formatEther(user1Balance),
-            user2: hre.ethers.formatEther(user2Balance)
-        },
-        gasUsage: {
-            totalGasUsed: totalGasUsed.toString(),
-            totalGasCostGOWE: hre.ethers.formatEther(
-                gasUsageLog.reduce((sum, record) => sum + BigInt(record.gasCostWei), 0n)
-            ),
-            detailedLog: gasUsageLog
-        }
-    };
-    
-    // JSON形式で保存情報を出力
-    console.log("\n📄 deployment-info-oop.json の内容:");
-    console.log(JSON.stringify(deploymentInfo, null, 2));
-    
-    // ファイル書き込み
-    const fs = require('fs');
-    try {
-        fs.writeFileSync('deployment-info-oop.json', JSON.stringify(deploymentInfo, null, 2));
-        console.log("✅ deployment-info-oop.json に保存完了");
-    } catch (error) {
-        console.log("⚠️  ファイル保存エラー:", error.message);
-    }
-    
-    // ========================================
-    // 完了レポート
-    // ========================================
-    
-    console.log("\n" + "=".repeat(60));
-    console.log("🎉 GOWENET オブジェクト指向型スマートコントラクト デプロイ完了!");
-    console.log("=".repeat(60));
-    
-    console.log("\n📋 デプロイされたコントラクト一覧:");
-    Object.entries(deployedContracts).forEach(([name, address]) => {
-        console.log(`   ${name}: ${address}`);
-    });
-    
-    console.log("\n⛽ ガス使用量サマリー:");
-    console.log(`   総ガス使用量: ${totalGasUsed.toLocaleString()} gas`);
-    console.log(`   総ガス代金: ${hre.ethers.formatEther(
-        gasUsageLog.reduce((sum, record) => sum + BigInt(record.gasCostWei), 0n)
-    )} GOWE`);
-    
-    console.log("\n📊 ステップ別ガス使用量:");
-    gasUsageLog.forEach((record, index) => {
-        console.log(`   ${index + 1}. ${record.step}: ${BigInt(record.gasUsed).toLocaleString()} gas (${record.gasCostGOWE} GOWE)`);
-    });
-    
-    console.log("\n🔍 アーキテクチャ比較用データ:");
-    console.log("   アーキテクチャ: オブジェクト指向型（モジュール分離）");
-    console.log("   コントラクト数: 5個");
-    console.log("   デプロイステップ: 8ステップ");
-    console.log("   デプロイガス使用量:", totalGasUsed.toLocaleString(), "gas");
-    
-    console.log("\n🔗 次のステップ:");
-    console.log("1. テスト実行: npx hardhat run scripts/test-oop.js --network gowenet");
-    console.log("2. モノリシック型との比較分析");
-    console.log("3. ガス使用量・コストの比較");
-    
-    console.log("\n📖 使用例:");
-    console.log("// Factory経由での新しい契約作成");
-    console.log(`const factory = await hre.ethers.getContractAt("FreelanceContractFactory", "${factoryAddress}");`);
-    console.log(`await factory.createContract(client, freelancer, amount, description);`);
-    
-    console.log("\n🚀 オブジェクト指向型デプロイ成功 - テスト実行可能!");
+} catch (error) {
+    console.error("❌ オーナーシップ移譲 失敗:", error.message);
+    throw error;
 }
 
-// エラーハンドリング
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error("\n❌ オブジェクト指向型デプロイ失敗:");
-        console.error(error);
-        process.exit(1);
-    });
+// ========================================
+// Phase 4: 設定確認（修正版・手順書完全準拠）
+// ========================================
 
+console.log("\n" + "=".repeat(50));
+console.log("🔍 Phase 4: 設定確認（手順書準拠）");
+console.log("=".repeat(50));
+
+try {
+    const factory = await hre.ethers.getContractAt("FreelanceContractFactory", deployedContracts.FreelanceContractFactory);
+    const contractBase = await hre.ethers.getContractAt("ContractBase", deployedContracts.ContractBase);
+    const paymentFlow = await hre.ethers.getContractAt("PaymentFlow", deployedContracts.PaymentFlow);
+    
+    // 手順書準拠の完全チェック
+    console.log("\n📋 手順書 Phase 2 完了チェック:");
+    
+    // 1. registerModules確認
+    const registeredModules = await factory.getRegisteredModules();
+    const step6Success = registeredModules[0] === deployedContracts.ContractBase && 
+                        registeredModules[1] === deployedContracts.PaymentFlow && 
+                        registeredModules[2] === deployedContracts.SignatureVerifier;
+    console.log(`   - [${step6Success ? '✅' : '❌'}] registerModules 実行成功`);
+    
+    // 2. setStakingModule確認
+    const stakingModule = await factory.stakingContractModule();
+    const step7Success = stakingModule === deployedContracts.StakingContract;
+    console.log(`   - [${step7Success ? '✅' : '❌'}] setStakingModule 実行成功`);
+    
+    // 3. オーナーシップ移譲確認
+    const contractBaseOwner = await contractBase.owner();
+    const paymentFlowOwner = await paymentFlow.owner();
+    const ownershipSuccess = contractBaseOwner === deployedContracts.FreelanceContractFactory && 
+                            paymentFlowOwner === deployedContracts.FreelanceContractFactory;
+    console.log(`   - [${ownershipSuccess ? '✅' : '❌'}] オーナーシップ移譲完了`);
+    
+    // 総合判定
+    const allSuccess = step6Success && step7Success && ownershipSuccess;
+    console.log(`\n🎯 Phase 2 総合結果: ${allSuccess ? '✅ 全て成功' : '❌ 一部失敗'}`);
+    
+    if (!allSuccess) {
+        console.log("\n⚠️  以下の問題を解決してから次に進んでください:");
+        if (!step6Success) console.log("   - registerModules の確認・再実行");
+        if (!step7Success) console.log("   - setStakingModule の確認・再実行");
+        if (!ownershipSuccess) console.log("   - オーナーシップ移譲の確認・再実行");
+        throw new Error("Phase 2 setup verification failed");
+    }
+    
+    console.log("\n🚀 デプロイ・設定完了！次のStep 8（契約作成）が実行可能です！");
+    
+} catch (error) {
+    console.error("❌ 設定確認でエラー:", error.message);
+    throw error;
+}
