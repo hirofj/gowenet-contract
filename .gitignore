@@ -27,3 +27,9 @@ coverage.json
 # Load test results
 load-test-results/
 load-test-results-*.json
+
+# Deployment info (generated on each deploy)
+deployment-info-*.json
+
+# Test results (generated on each test)
+test-results-*.json
