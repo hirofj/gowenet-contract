@@ -23,3 +23,7 @@ coverage.json
 
 # Logs
 *.log
+
+# Load test results
+load-test-results/
+load-test-results-*.json
