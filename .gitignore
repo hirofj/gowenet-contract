@@ -33,3 +33,4 @@ deployment-info-*.json
 
 # Test results (generated on each test)
 test-results-*.json
+remappings.txt
