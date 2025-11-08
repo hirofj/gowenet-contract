@@ -1,0 +1,120 @@
+{
+  "architecture": "object_oriented",
+  "network": "gowenet",
+  "chainId": 98888,
+  "deployer": "0x8464d8E79A31C20bf8f909EF0Ab334744Ed6C2eA",
+  "deploymentTime": "2025-11-08T00:32:12.443Z",
+  "accounts": {
+    "deployer": "0x8464d8E79A31C20bf8f909EF0Ab334744Ed6C2eA",
+    "client": "0x9740cfc1A67B5B3A5C0eA6Eea04C10923F435c9d",
+    "freelancer": "0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6"
+  },
+  "contracts": {
+    "SignatureVerifier": "0xE3783148BF70A1122cEE6a4C16c0578E698dFe03",
+    "ContractBase": "0x4bA7a747bBa2dC74026f90964cb930Be6C171c44",
+    "StakingContract": "0xbB948D8C4b4Cd01823c179317fC35Abc9F002408",
+    "PaymentFlow": "0xeCAb5fa00f0F611D1928A5DFDBaf0BC07B2c8Be8",
+    "FreelanceContractFactory": "0x7cFFa8BDdF1EcdC61DfDa9540F107F53bc7BEdEB"
+  },
+  "balances": {
+    "deployer": "97.155463024888486521",
+    "user1": "9.929556924997182277",
+    "user2": "9.932374774997294991"
+  },
+  "gasUsage": {
+    "totalGasUsed": "8386589",
+    "totalGasCostGOWE": "0.209664725008386589",
+    "detailedLog": [
+      {
+        "step": "SignatureVerifier Deploy",
+        "description": "デジタル署名検証モジュール",
+        "gasUsed": "810972",
+        "gasPrice": "25000000001",
+        "gasCostWei": "20274300000810972",
+        "gasCostGOWE": "0.020274300000810972",
+        "transactionHash": "0x86065a86751771bed9517ccd35ea9fd464bda0641702d96b06e7d7c7709cf257",
+        "blockNumber": 150
+      },
+      {
+        "step": "ContractBase Deploy",
+        "description": "状態管理モジュール",
+        "gasUsed": "648173",
+        "gasPrice": "25000000001",
+        "gasCostWei": "16204325000648173",
+        "gasCostGOWE": "0.016204325000648173",
+        "transactionHash": "0xab842e4ddecf2ffa3c120c3cdab8405f7c0b4bd5d8d1426324529ff80a74472d",
+        "blockNumber": 151
+      },
+      {
+        "step": "StakingContract Deploy",
+        "description": "ステーキング・貢献度管理",
+        "gasUsed": "698594",
+        "gasPrice": "25000000001",
+        "gasCostWei": "17464850000698594",
+        "gasCostGOWE": "0.017464850000698594",
+        "transactionHash": "0xd15d8e89351f06e733e3c7a632dd2b846972b461ef73a73b312af1df3c03017f",
+        "blockNumber": 152
+      },
+      {
+        "step": "PaymentFlow Deploy",
+        "description": "支払い処理・エスクロー",
+        "gasUsed": "1882003",
+        "gasPrice": "25000000001",
+        "gasCostWei": "47050075001882003",
+        "gasCostGOWE": "0.047050075001882003",
+        "transactionHash": "0xb3a2ed886e30c327927ac03aefd2f22baa3e83a71b3b0e62f2f6e9851b34e135",
+        "blockNumber": 153
+      },
+      {
+        "step": "FreelanceContractFactory Deploy",
+        "description": "ファクトリーパターン実装",
+        "gasUsed": "4150090",
+        "gasPrice": "25000000001",
+        "gasCostWei": "103752250004150090",
+        "gasCostGOWE": "0.10375225000415009",
+        "transactionHash": "0x604995fafd889736d605e38144698ad50e5138ca363052c4aff4bee589c6041a",
+        "blockNumber": 154
+      },
+      {
+        "step": "registerModules",
+        "description": "モジュール登録",
+        "gasUsed": "93339",
+        "gasPrice": "25000000001",
+        "gasCostWei": "2333475000093339",
+        "gasCostGOWE": "0.002333475000093339",
+        "transactionHash": "0x5117197862553ea95336fc5030137cdb54dc19ef4fe248d2ce787620f3d3664d",
+        "blockNumber": 155
+      },
+      {
+        "step": "setStakingModule",
+        "description": "ステーキングモジュール設定",
+        "gasUsed": "46134",
+        "gasPrice": "25000000001",
+        "gasCostWei": "1153350000046134",
+        "gasCostGOWE": "0.001153350000046134",
+        "transactionHash": "0xf1a6deb64527323e57906216b2cb7e398faa10eb3200f454859fd8a12da24278",
+        "blockNumber": 156
+      },
+      {
+        "step": "transferOwnership ContractBase",
+        "description": "ContractBase所有権移譲",
+        "gasUsed": "28653",
+        "gasPrice": "25000000001",
+        "gasCostWei": "716325000028653",
+        "gasCostGOWE": "0.000716325000028653",
+        "transactionHash": "0xabb1280180c60e21878fca1308a3a53a78cbe1caddf321ef43030990adef1b26",
+        "blockNumber": 157
+      },
+      {
+        "step": "transferOwnership PaymentFlow",
+        "description": "PaymentFlow所有権移譲",
+        "gasUsed": "28631",
+        "gasPrice": "25000000001",
+        "gasCostWei": "715775000028631",
+        "gasCostGOWE": "0.000715775000028631",
+        "transactionHash": "0x760ef2e977574b0376f95faeb1624c76ae7879feb5cb582b7ca284e4472c6642",
+        "blockNumber": 158
+      }
+    ]
+  }
+}

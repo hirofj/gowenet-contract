@@ -1,0 +1,90 @@
+{
+  "config": {
+    "contractCount": 3,
+    "delayBetweenContracts": 1000,
+    "delayBetweenSteps": 500,
+    "saveResults": true,
+    "verbose": false
+  },
+  "stats": {
+    "total": 3,
+    "successful": 0,
+    "failed": 3,
+    "steps": {
+      "createContract": {
+        "success": 0,
+        "failed": 3,
+        "totalGas": "0"
+      },
+      "authenticate": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "deliverWork": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "approveDeliverable": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "makeDirectPayment": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "completeContract": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      }
+    },
+    "contracts": [
+      {
+        "index": 1,
+        "address": null,
+        "status": "failed",
+        "steps": {},
+        "errors": [
+          {
+            "step": "createContract",
+            "message": "contract runner does not support sending transactions (operation=\"sendTransaction\", code=UNSUPPORTED_OPERATION, version=6.15.0)",
+            "shortMessage": "contract runner does not support sending transactions"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "address": null,
+        "status": "failed",
+        "steps": {},
+        "errors": [
+          {
+            "step": "createContract",
+            "message": "contract runner does not support sending transactions (operation=\"sendTransaction\", code=UNSUPPORTED_OPERATION, version=6.15.0)",
+            "shortMessage": "contract runner does not support sending transactions"
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "address": null,
+        "status": "failed",
+        "steps": {},
+        "errors": [
+          {
+            "step": "createContract",
+            "message": "contract runner does not support sending transactions (operation=\"sendTransaction\", code=UNSUPPORTED_OPERATION, version=6.15.0)",
+            "shortMessage": "contract runner does not support sending transactions"
+          }
+        ]
+      }
+    ],
+    "startTime": "2025-11-08T00:38:46.043Z",
+    "endTime": "2025-11-08T00:38:48.447Z"
+  },
+  "duration": "2.40s"
+}

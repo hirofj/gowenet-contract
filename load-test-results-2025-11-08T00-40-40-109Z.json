@@ -1,0 +1,123 @@
+{
+  "config": {
+    "contractCount": 3,
+    "delayBetweenContracts": 1000,
+    "delayBetweenSteps": 500,
+    "saveResults": true,
+    "verbose": false
+  },
+  "stats": {
+    "total": 3,
+    "successful": 0,
+    "failed": 3,
+    "steps": {
+      "createContract": {
+        "success": 3,
+        "failed": 0,
+        "totalGas": "9347187"
+      },
+      "authenticate": {
+        "success": 3,
+        "failed": 0,
+        "totalGas": "449097"
+      },
+      "deliverWork": {
+        "success": 0,
+        "failed": 3,
+        "totalGas": "0"
+      },
+      "approveDeliverable": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "makeDirectPayment": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      },
+      "completeContract": {
+        "success": 0,
+        "failed": 0,
+        "totalGas": "0"
+      }
+    },
+    "contracts": [
+      {
+        "index": 1,
+        "address": "0xe1F73605a77d12b085E272d6Bb5601FbaDac978e",
+        "status": "failed",
+        "steps": {
+          "createContract": {
+            "status": "success",
+            "gas": "3115729",
+            "txHash": "0x0e9ab0010ed0685df4c77ff2448516a684b5f7345eb65dcf02ce9649ea5614ff"
+          },
+          "authenticate": {
+            "status": "success",
+            "gas": "149699",
+            "txHash": "0x786d9d4291e16cd25a11da7bd262e6d9619171e2a04faa338ff456bfeaa4ef30"
+          }
+        },
+        "errors": [
+          {
+            "step": "deliverWork",
+            "message": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"to\": \"0xe1F73605a77d12b085E272d6Bb5601FbaDac978e\" }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0xaa30ca8eddbd8856bba7acde15615faf66b86429c85d8dcfb57c3b58372be4bf\", \"blockNumber\": 182, \"contractAddress\": null, \"cumulativeGasUsed\": \"160255\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"gasPrice\": \"25000000001\", \"gasUsed\": \"160255\", \"hash\": \"0x9dfc45fc105c844e3686a32229dbbb6e68f4eb7e3e01fcdb83d87fd0342ff69e\", \"index\": 0, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": \"0xe1F73605a77d12b085E272d6Bb5601FbaDac978e\" }, code=CALL_EXCEPTION, version=6.15.0)",
+            "shortMessage": "transaction execution reverted"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "address": "0x61d4EaE53776aBdaEef20991af91cf52E1444127",
+        "status": "failed",
+        "steps": {
+          "createContract": {
+            "status": "success",
+            "gas": "3115729",
+            "txHash": "0x590b8119e376ae4bf1ed3240d767c5dabf4d966bebe9395014487dfac6c89388"
+          },
+          "authenticate": {
+            "status": "success",
+            "gas": "149699",
+            "txHash": "0x6e90834a876d9bfccfdb9a2460044a76323763b09552afdb275d7597e22b66ec"
+          }
+        },
+        "errors": [
+          {
+            "step": "deliverWork",
+            "message": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"to\": \"0x61d4EaE53776aBdaEef20991af91cf52E1444127\" }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x0ac217c8e5bb1b7543ad68926d32a0b9fa5cd5c89f9234884cf4013838ad0c83\", \"blockNumber\": 185, \"contractAddress\": null, \"cumulativeGasUsed\": \"160255\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"gasPrice\": \"25000000001\", \"gasUsed\": \"160255\", \"hash\": \"0xf47736c73fd941696b5913bf283104afb4be34ab569464ecc434e8574b0dc700\", \"index\": 0, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": \"0x61d4EaE53776aBdaEef20991af91cf52E1444127\" }, code=CALL_EXCEPTION, version=6.15.0)",
+            "shortMessage": "transaction execution reverted"
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "address": "0xe4063d5F8482CC983dFA314D6A845a331aA83878",
+        "status": "failed",
+        "steps": {
+          "createContract": {
+            "status": "success",
+            "gas": "3115729",
+            "txHash": "0x0fcd9f5a3684fbfd8a9a0ad40a2be23226c115302e54c85b9732edf080458891"
+          },
+          "authenticate": {
+            "status": "success",
+            "gas": "149699",
+            "txHash": "0x24141ade49dcc925d33bd7a57a24022d8268c15ed2c54fad41b986e6208f99b4"
+          }
+        },
+        "errors": [
+          {
+            "step": "deliverWork",
+            "message": "transaction execution reverted (action=\"sendTransaction\", data=null, reason=null, invocation=null, revert=null, transaction={ \"data\": \"\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"to\": \"0xe4063d5F8482CC983dFA314D6A845a331aA83878\" }, receipt={ \"_type\": \"TransactionReceipt\", \"blobGasPrice\": null, \"blobGasUsed\": null, \"blockHash\": \"0x9f7310640e551dd9289a60c245525148ac9e2481c76e562dbdc94d97a2043ad8\", \"blockNumber\": 188, \"contractAddress\": null, \"cumulativeGasUsed\": \"160255\", \"from\": \"0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6\", \"gasPrice\": \"25000000001\", \"gasUsed\": \"160255\", \"hash\": \"0x54950121d123a9c51a3b5fa9e38cc1a78af952f74c53dfd4becd94549c2d2f96\", \"index\": 0, \"logs\": [  ], \"logsBloom\": \"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\", \"root\": null, \"status\": 0, \"to\": \"0xe4063d5F8482CC983dFA314D6A845a331aA83878\" }, code=CALL_EXCEPTION, version=6.15.0)",
+            "shortMessage": "transaction execution reverted"
+          }
+        ]
+      }
+    ],
+    "startTime": "2025-11-08T00:40:23.154Z",
+    "endTime": "2025-11-08T00:40:40.108Z"
+  },
+  "duration": "16.95s"
+}
