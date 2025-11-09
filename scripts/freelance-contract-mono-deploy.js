@@ -163,7 +163,7 @@ async function main() {
     // ファイル書き込み
     const fs = require('fs');
     try {
-        fs.writeFileSync('deployment-info-monolithic.json', JSON.stringify(deploymentInfo, null, 2));
+        fs.writeFileSync('logs/deployment-info-monolithic.json', JSON.stringify(deploymentInfo, null, 2));
         console.log("✅ deployment-info-monolithic.json に保存完了");
     } catch (error) {
         console.log("⚠️  ファイル保存エラー:", error.message);
