@@ -257,3 +257,49 @@ MIT License
 
 Developed for GOWENET research project - Avalanche L1 Subnet-based decentralized governance and contract system.
 
+
+---
+
+## 🔬 Architecture Comparison: OOP vs Monolithic
+
+### **Load Test Results (30 contracts)**
+
+| Metric | OOP (Factory) | Monolithic | Difference |
+|--------|---------------|------------|------------|
+| **Success Rate** | 100% (30/30) | 100% (30/30) | ✅ Same |
+| **Avg Time per Contract** | 11.8s | 11.95s | +1.3% slower |
+| **Total Gas Used** | 117,876,669 | 72,483,126 | **-38.5% 🎯** |
+| **Avg Gas per Contract** | 3,929,222 | 2,416,104 | **-38.5% 🎯** |
+
+### **Gas Usage by Operation**
+
+| Operation | OOP | Monolithic | Savings |
+|-----------|-----|------------|---------|
+| `createContract/deploy` | 3,161,368 | 1,908,820 | **-39.6%** |
+| `authenticate` | 149,699 | 100,848 | **-32.6%** |
+| `deliverWork` | 161,983 | 143,017 | **-11.7%** |
+| `approveDeliverable` | 65,615 | 57,836 | **-11.9%** |
+| `makeDirectPayment` | 308,348 | 108,365 | **-64.9%** ⚡ |
+| `completeContract` | 82,208 | 97,217 | +18.3% |
+
+### **Trade-offs**
+
+**OOP Architecture Advantages:**
+- ✅ **Modularity**: Independent, reusable contracts (PaymentFlow, SignatureVerifier, etc.)
+- ✅ **Maintainability**: Isolated functionality, easier debugging
+- ✅ **Extensibility**: Add new features without affecting existing code
+- ✅ **Reusability**: Components can be used in other projects
+
+**Monolithic Architecture Advantages:**
+- ✅ **Gas Efficiency**: 38.5% less gas per contract (~1.5 GOWE savings)
+- ✅ **Simplicity**: Single contract, easier deployment
+- ✅ **Lower Complexity**: No inter-contract communication overhead
+- ✅ **Atomic Operations**: All state in one contract
+
+### **Recommendation**
+
+- **Use OOP** for production systems requiring flexibility, long-term maintenance, and multiple teams
+- **Use Monolithic** for cost-sensitive applications, prototypes, or simple use cases
+
+---
+
