@@ -447,27 +447,85 @@ async function main() {
             authenticate: 500000,
             deliverWork: 1000000,
             approveDeliverable: 500000,
-            makeDirectPayment: 800000,
-            completeContract: 600000
         },
-        summary: {
-            totalDuration: totalDuration,
-            successCount: successCount,
-            errorCount: errorCount,
-            deliverWorkErrors: deliverWorkErrors,
-            successRate: successCount / LOAD_TEST_COUNT,
-            actualTPS: actualTPS,
-            totalGasUsed: totalGasUsed.toString(),
-            deliverWorkFixed: deliverWorkErrors === 0 && successCount > 0
+    };
+
+    // 新しいJSON形式でデータを構造化
+    const testId = `load_test_${LOAD_TEST_COUNT}_${new Date().toISOString().slice(0,19).replace(/[-:]/g,'').replace('T','_')}`;
+    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
+    
+    const structuredData = {
+        testMetadata: {
+            testId: testId,
+            startTime: startTime.toISOString(),
+            architecture: "object_oriented",
+            targetContracts: LOAD_TEST_COUNT,
+            targetTPS: TARGET_TPS,
+            intervalMs: INTERVAL_MS,
+            gasLimitsEnabled: true
         },
-        results: results,
-        gasLog: gasUsageLog,
-        errorLog: stepErrorLog,
-        deploymentInfo: deploymentInfo
+        deployment: {
+            deployer: deploymentInfo.deployer,
+            contracts: {
+                factory: deploymentInfo.FreelanceContractFactory,
+                staking: deploymentInfo.StakingContract
+            },
+            accounts: {
+                baseClient: deploymentInfo.accounts.user1,
+                baseFreelancer: deploymentInfo.accounts.user2
+        },
+            id: idx + 1,
+            contractAddress: r.contractAddress ? r.contractAddress.substring(0,10) : null,
+            timestamp: r.timestamp,
+            client: deploymentInfo.accounts.user1,
+            freelancer: deploymentInfo.accounts.user2,
+            executionTimeMs: r.executionTime || null,
+            gas: r.gasUsed || {},
+            deliverable: r.deliverable || null
+        })),
+        executionSummary: {
+            endTime: new Date().toISOString(),
+            totalDurationSeconds: totalDuration,
+            totalContracts: LOAD_TEST_COUNT,
+            successfulContracts: successCount,
+            failedContracts: errorCount,
+            successRate: parseFloat((successCount / LOAD_TEST_COUNT * 100).toFixed(2)),
+            actualTPS: parseFloat(actualTPS.toFixed(2)),
+            executionTime: {
+                average: Math.round(totalDuration / LOAD_TEST_COUNT * 1000),
+                min: null,
+                max: null,
+                standardDeviation: null
+            },
+            gas: {
+                totalUsed: totalGasUsed.toString(),
+                avgPerContract: Math.round(Number(totalGasUsed) / successCount),
+                byStep: Object.fromEntries(
+                    Object.entries(gasUsageLog.reduce((acc, log) => {
+                        Object.entries(log).forEach(([step, gas]) => {
+                            if (step !== 'contractIndex') {
+                                acc[step] = (acc[step] || 0) + Number(gas);
+                            }
+                        });
+                        return acc;
+                    }, {})).map(([k, v]) => [k, Math.round(v / gasUsageLog.length)])
+                )
+            },
+            gasLimits: {
+                createContract: 5000000,
+                authenticate: 500000,
+                deliverWork: 1000000,
+                approveDeliverable: 500000,
+                makeDirectPayment: 800000,
+                completeContract: 600000
+            }
+        }
     };
     
-    const resultFileName = `logs/test_oop_${new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12)}.json`;
-    fs.writeFileSync(resultFileName, JSON.stringify(resultData, null, 2));
+    const resultFileName = `logs/test_oop_${timestamp}.json`;
+    fs.writeFileSync(resultFileName, JSON.stringify(structuredData, null, 2));
+    console.log(`\n💾 詳細結果保存: ${resultFileName}`);
+    
     console.log(`\n💾 詳細結果保存: ${resultFileName}`);
     
     // 最終判定
