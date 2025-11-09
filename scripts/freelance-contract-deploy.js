@@ -332,6 +332,50 @@ try {
     }
     
     console.log("\n🚀 デプロイ・設定完了！次のStep 8（契約作成）が実行可能です！");
+
+    // ========================================
+    // Save Deployment Information
+    // ========================================
+    const fs = require('fs');
+    
+    const finalDeployerBalance = await hre.ethers.provider.getBalance(deployer.address);
+    const finalUser1Balance = await hre.ethers.provider.getBalance(user1.address);
+    const finalUser2Balance = await hre.ethers.provider.getBalance(user2.address);
+    
+    const deploymentInfo = {
+        architecture: "oop",
+        network: "gowenet",
+        chainId: 98888,
+        deployer: deployer.address,
+        deploymentTime: new Date().toISOString(),
+        accounts: {
+            deployer: deployer.address,
+            client: user1.address,
+            freelancer: user2.address
+        },
+        contracts: {
+            SignatureVerifier: await signatureVerifier.getAddress(),
+            ContractBase: await contractBase.getAddress(),
+            StakingContract: await stakingContract.getAddress(),
+            PaymentFlow: await paymentFlow.getAddress(),
+            FreelanceContractFactory: await factory.getAddress()
+        },
+        balances: {
+            deployer: hre.ethers.formatEther(finalDeployerBalance),
+            user1: hre.ethers.formatEther(finalUser1Balance),
+            user2: hre.ethers.formatEther(finalUser2Balance)
+        }
+    };
+    
+    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
+    const filename = `logs/deploy_oop_${timestamp}.json`;
+    
+    try {
+        fs.writeFileSync(filename, JSON.stringify(deploymentInfo, null, 2));
+        console.log(`\n💾 Deployment info saved to: ${filename}`);
+    } catch (error) {
+        console.error(`\n⚠️  Failed to save deployment info: ${error.message}`);
+    }
     
 } catch (error) {
     console.error("❌ 設定確認でエラー:", error.message);
