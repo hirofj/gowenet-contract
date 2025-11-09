@@ -59,7 +59,9 @@ npx hardhat run scripts/freelance-contract-deploy.js --network gowenet
 npx hardhat run scripts/freelance-contract-mono-deploy.js --network gowenet
 ```
 
-**Output:** Deployment info saved to `deployment-info-oop.json`
+**Output Files:** 
+- OOP: `logs/deploy_oop_YYYYMMDDHHMM.json`
+- Monolithic: `logs/deploy_mono_YYYYMMDDHHMM.json`
 
 ---
 
@@ -68,27 +70,32 @@ npx hardhat run scripts/freelance-contract-mono-deploy.js --network gowenet
 ### **Run Contract Test (OOP)**
 ```bash
 # Single contract test
-npx hardhat run scripts/freelance-contract-test.js --network gowenet
+npx hardhat run scripts/freelance-contract-oop-test.js --network gowenet
 
 # Load test with 30 contracts
-LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-test.js --network gowenet
+LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-oop-test.js --network gowenet
 
 # 1-hour load test (300 contracts, ~59 minutes)
-LOAD_TEST_COUNT=300 npx hardhat run scripts/freelance-contract-test.js --network gowenet
+LOAD_TEST_COUNT=300 npx hardhat run scripts/freelance-contract-oop-test.js --network gowenet
 ```
 
 ### **Run Monolithic Test (for comparison)**
 ```bash
-npx hardhat run scripts/freelance-contract-mono-test.js --network gowenet
+# Load test with 30 contracts
+LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-mono-test.js --network gowenet
 ```
 
 **Test Workflow:**
-1. Create freelance contract via Factory
+1. Create freelance contract via Factory (OOP) or deploy directly (Monolithic)
 2. Authenticate parties (client & freelancer)
 3. Deliver work with signature
 4. Approve deliverable
 5. Execute payment (1 GOWE)
 6. Complete contract
+
+**Output Files:**
+- OOP: `logs/test_oop_YYYYMMDDHHMM.json`
+- Monolithic: `logs/test_mono_YYYYMMDDHHMM.json`
 
 ---
 
@@ -210,13 +217,90 @@ gowenet-contract/
 │   ├── StakingContract.sol
 │   └── ValidatorIncentives.sol
 ├── scripts/
-│   ├── freelance-contract-deploy.js      # Deploy OOP contracts
-│   ├── freelance-contract-test.js        # Test OOP contracts
-│   ├── freelance-contract-mono-deploy.js # Deploy monolithic version
-│   └── freelance-contract-mono-test.js   # Test monolithic version
+│   ├── freelance-contract-deploy.js          # Deploy OOP contracts
+│   ├── freelance-contract-oop-test.js        # Test OOP contracts (with JSON output)
+│   ├── freelance-contract-mono-deploy.js     # Deploy monolithic version
+│   └── freelance-contract-mono-test.js       # Test monolithic version (with JSON output)
+├── logs/                                      # Test results and deployment info
+│   ├── deploy_oop_YYYYMMDDHHMM.json
+│   ├── deploy_mono_YYYYMMDDHHMM.json
+│   ├── test_oop_YYYYMMDDHHMM.json
+│   └── test_mono_YYYYMMDDHHMM.json
 ├── hardhat.config.js
 ├── package.json
 └── README.md
+```
+
+---
+
+## 📋 Log File Naming Convention
+
+All deployment and test output files follow this standardized format:
+
+```
+{type}_{architecture}_{YYYYMMDDHHMM}.{ext}
+```
+
+- **type**: `deploy` or `test`
+- **architecture**: `oop` or `mono`
+- **timestamp**: `YYYYMMDDHHMM` format (e.g., `202511091430`)
+- **extension**: `.json` for structured data, `.log` for text logs
+
+**Examples:**
+- `logs/deploy_oop_202511081546.json` - OOP deployment info
+- `logs/test_mono_202511091605.json` - Monolithic test results
+- `logs/test_oop_202511091414.log` - OOP test execution log
+
+---
+
+## 📊 JSON Output Format
+
+Both OOP and Monolithic test scripts output structured JSON for research analysis:
+
+```json
+{
+  "testMetadata": {
+    "testId": "load_test_30_20251109_143000",
+    "startTime": "2025-11-09T14:30:00.000Z",
+    "architecture": "object_oriented" | "monolithic",
+    "targetContracts": 30,
+    "targetTPS": 5,
+    "intervalMs": 200,
+    "gasLimitsEnabled": true
+  },
+  "deployment": {
+    "deployer": "0x...",
+    "contracts": { ... },
+    "accounts": { ... }
+  },
+  "contracts": [
+    {
+      "id": 1,
+      "contractAddress": "0x...",
+      "timestamp": "2025-11-09T14:30:00.000Z",
+      "executionTimeMs": 11354,
+      "gas": {
+        "createContract": 3161368,
+        "authenticate": 149699,
+        "deliverWork": 161983,
+        "approveDeliverable": 65615,
+        "makeDirectPayment": 308348,
+        "completeContract": 82208,
+        "total": 3929221
+      }
+    }
+  ],
+  "executionSummary": {
+    "totalContracts": 30,
+    "successRate": 100,
+    "executionTime": { "average": 11800 },
+    "gas": {
+      "totalUsed": "117876630",
+      "avgPerContract": 3929221,
+      "byStep": { ... }
+    }
+  }
+}
 ```
 
 ---
@@ -244,19 +328,6 @@ gowenet-contract/
 
 ### **Issue: Signature Verification Always Returns `true`**
 **Status:** Under investigation. SignatureVerifier unit tests pass, but integration may need adjustment.
-
----
-
-## 📝 License
-
-MIT License
-
----
-
-## 👥 Contributors
-
-Developed for GOWENET research project - Avalanche L1 Subnet-based decentralized governance and contract system.
-
 
 ---
 
@@ -303,3 +374,12 @@ Developed for GOWENET research project - Avalanche L1 Subnet-based decentralized
 
 ---
 
+## 📝 License
+
+MIT License
+
+---
+
+## 👥 Contributors
+
+Developed for GOWENET research project - Avalanche L1 Subnet-based decentralized governance and contract system.
