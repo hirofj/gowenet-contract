@@ -26,7 +26,7 @@ async function main() {
     const fs = require('fs');
     let deploymentInfo;
     try {
-        deploymentInfo = JSON.parse(fs.readFileSync('deployment-info-oop.json', 'utf8'));
+        deploymentInfo = JSON.parse(fs.readFileSync('logs/deploy_oop_202511081546.json', 'utf8'));
     } catch (error) {
         console.error("❌ deployment-info-oop.json が見つかりません");
         console.error("   先にデプロイスクリプトを実行してください: npx hardhat run scripts/deploy-oop.js --network gowenet");
@@ -457,7 +457,7 @@ async function main() {
     const structuredData = {
         testMetadata: {
             testId: testId,
-            startTime: startTime.toISOString(),
+            startTime: new Date(startTime).toISOString(),
             architecture: "object_oriented",
             targetContracts: LOAD_TEST_COUNT,
             targetTPS: TARGET_TPS,
@@ -473,8 +473,9 @@ async function main() {
             accounts: {
                 baseClient: deploymentInfo.accounts.user1,
                 baseFreelancer: deploymentInfo.accounts.user2
+            }
         },
-            id: idx + 1,
+        contracts: results.map((r, idx) => ({
             contractAddress: r.contractAddress ? r.contractAddress.substring(0,10) : null,
             timestamp: r.timestamp,
             client: deploymentInfo.accounts.user1,
