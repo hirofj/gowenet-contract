@@ -507,9 +507,6 @@ async function main() {
             actualTPS: parseFloat(actualTPS.toFixed(2)),
             executionTime: {
                 average: Math.round(totalDuration / LOAD_TEST_COUNT * 1000),
-                min: null,
-                max: null,
-                standardDeviation: null
             },
             gas: {
                 totalUsed: totalGasUsed.toString(),
@@ -517,7 +514,7 @@ async function main() {
                 byStep: Object.fromEntries(
                     Object.entries(gasUsageLog.reduce((acc, log) => {
                         Object.entries(log).forEach(([step, gas]) => {
-                            if (step !== 'contractIndex') {
+                            if (step !== 'contractIndex' && step !== 'cycle' && step !== 'step' && step !== 'blockNumber' && step !== 'timestamp') {
                                 acc[step] = (acc[step] || 0) + Number(gas);
                             }
                         });
