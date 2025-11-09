@@ -272,7 +272,7 @@ async function main() {
     }
     
     // Save results
-    const resultsFile = `test-results-monolithic-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    const resultsFile = `logs/test-results-monolithic-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     const resultsData = {
         testType: "monolithic-load-test",
         timestamp: new Date().toISOString(),

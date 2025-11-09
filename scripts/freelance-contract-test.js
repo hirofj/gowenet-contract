@@ -466,7 +466,7 @@ async function main() {
         deploymentInfo: deploymentInfo
     };
     
-    const resultFileName = `load-test-results-gas-fixed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    const resultFileName = `logs/load-test-results-gas-fixed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     fs.writeFileSync(resultFileName, JSON.stringify(resultData, null, 2));
     console.log(`\n💾 詳細結果保存: ${resultFileName}`);
     
