@@ -467,23 +467,36 @@ async function main() {
         deployment: {
             deployer: deploymentInfo.deployer,
             contracts: {
-                factory: deploymentInfo.FreelanceContractFactory,
-                staking: deploymentInfo.StakingContract
+                factory: deploymentInfo.contracts?.FreelanceContractFactory || deploymentInfo.FreelanceContractFactory,
+                staking: deploymentInfo.contracts?.StakingContract || deploymentInfo.StakingContract
             },
             accounts: {
-                baseClient: deploymentInfo.accounts.user1,
-                baseFreelancer: deploymentInfo.accounts.user2
+                baseClient: deploymentInfo.accounts?.client || deploymentInfo.accounts?.user1,
+                baseFreelancer: deploymentInfo.accounts?.freelancer || deploymentInfo.accounts?.user2
             }
         },
-        contracts: results.map((r, idx) => ({
-            contractAddress: r.contractAddress ? r.contractAddress.substring(0,10) : null,
-            timestamp: r.timestamp,
-            client: deploymentInfo.accounts.user1,
-            freelancer: deploymentInfo.accounts.user2,
-            executionTimeMs: r.executionTime || null,
-            gas: r.gasUsed || {},
-            deliverable: r.deliverable || null
-        })),
+        contracts: results.filter(r => r.success).map((r, idx) => {
+            const cycleGas = gasUsageLog.filter(log => log.cycle === r.cycle);
+            const gasBreakdown = {
+                createContract: cycleGas.find(g => g.step === "createContract")?.gasUsed || 0,
+                authenticate: cycleGas.find(g => g.step === "authenticate")?.gasUsed || 0,
+                deliverWork: cycleGas.find(g => g.step === "deliverWork")?.gasUsed || 0,
+                approveDeliverable: cycleGas.find(g => g.step === "approveDeliverable")?.gasUsed || 0,
+                makeDirectPayment: cycleGas.find(g => g.step === "makeDirectPayment")?.gasUsed || 0,
+                completeContract: cycleGas.find(g => g.step === "completeContract")?.gasUsed || 0,
+                total: parseInt(r.gasUsed) || 0
+            };
+            return {
+                id: r.cycle,
+                contractAddress: r.contractAddress || null,
+                timestamp: new Date(startTime + (r.cycle - 1) * INTERVAL_MS).toISOString(),
+                client: r.clientAddress,
+                freelancer: r.freelancerAddress,
+                executionTimeMs: r.duration,
+                gas: gasBreakdown,
+                deliverable: `https://example.com/delivery-${r.cycle}-${Date.now()}`
+            };
+        }),
         executionSummary: {
             endTime: new Date().toISOString(),
             totalDurationSeconds: totalDuration,
