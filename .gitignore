@@ -21,16 +21,16 @@ coverage.json
 .vscode/
 .idea/
 
-# Logs
+# Logs and test results (new naming convention)
+logs/deploy_*.json
+logs/test_*.json
+logs/test_*.log
 *.log
 
-# Load test results
+# Legacy patterns (deprecated)
 load-test-results/
 load-test-results-*.json
-
-# Deployment info (generated on each deploy)
 deployment-info-*.json
-
-# Test results (generated on each test)
 test-results-*.json
+
 remappings.txt
