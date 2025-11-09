@@ -1,417 +1,259 @@
-# GOWENET契約システム
+# GOWENET Smart Contract System
 
-🌐 **Avalanche L1 Subnetによる分散型契約管理システム**
+🌐 **Avalanche L1 Subnet-based Decentralized Contract Management System**
 
-モジュール化されたオブジェクト指向スマートコントラクトアーキテクチャを特徴とする、フリーランス業務委託契約、支払い処理、貢献者報酬を管理するシステムです。
-
----
-
-## 📋 スマートコントラクト構成
-
-### **実装されているコントラクト**
-
-| ファイル | 機能 | 説明 |
-|---------|------|------|
-| **ContractBase.sol** | 状態管理 | 契約の基本状態（Created, InProgress, Delivered, Disputed, Paid, Completed）を管理 |
-| **FreelanceContract.sol** | 業務委託契約ロジック | フリーランス契約の全体的なワークフローを管理 |
-| **PaymentFlow.sol** | 支払い処理 | エスクロー、直接支払い、署名検証による支払い機能 |
-| **SignatureVerifier.sol** | デジタル署名検証 | ECDSA署名の検証とセキュリティ機能 |
-| **StakingContract.sol** | ステーキング・貢献度管理 | ネイティブトークン（GOWE）のステーキングと貢献度スコア |
-| **FreelanceContractFactory.sol** | ファクトリーパターン | 契約インスタンスの動的作成 |
-| **ValidatorIncentives.sol** | バリデータ報酬 | バリデータへの報酬分配システム |
-| **FreelanceContractMonolithic.sol** | モノリシック実装 | 比較用の従来型一体化アーキテクチャ |
+A modular, object-oriented smart contract system for managing freelance contracts, payments, and contributor rewards on the GOWENET blockchain.
 
 ---
 
-## 🔧 主要データ構造
+## 📋 Architecture Overview
 
-### **ContractBase.sol**
-```solidity
-enum State { Created, InProgress, Delivered, Disputed, Paid, Completed }
+### **Deployed Contracts (OOP Architecture)**
 
-// 状態変数
-State public state;
-mapping(address => bool) public authorizedContracts;
-uint256 public createdAt;
-uint256 public lastUpdated;
-uint256 public stateChangeCount;
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| **SignatureVerifier** | `0xc364680CbdCC27d230C50a1E3A3Fb7011b40D194` | ECDSA signature verification |
+| **ContractBase** | `0x7aDf40aA105D050AcB8CE2B2Ad09b24D0fb7e7d9` | Contract state management |
+| **StakingContract** | `0x9B19224dcf90Ea72A80eB41eB376A9503C4D0E57` | GOWE token staking & rewards |
+| **PaymentFlow** | `0x4B983C6094171aFA25a0A964354aa11da73aFd40` | Escrow & payment processing |
+| **FreelanceContractFactory** | `0x81652419788AcfF4EcDadd0Fd885eaE30127eA4D` | Dynamic contract creation |
+
+**Network:** GOWENET (Chain ID: 98888)  
+**RPC Endpoint:** `http://192.168.3.86:9654/ext/bc/2tGwFCjwr3w6fW774ytz982h5Th9eiALrKFanmBKZjxQSqTBxW/rpc`  
+**Deployment Date:** 2025-11-08
+
+---
+
+## 🚀 Quick Start
+
+### **Prerequisites**
+```bash
+node >= 18.0.0
+npm >= 9.0.0
 ```
 
-### **FreelanceContract.sol**
-```solidity
-enum WorkStatus { NotStarted, InProgress, UnderReview, Revision, Completed }
-
-struct Rating {
-    uint8 score;        // 評価点（1-5）
-    string comment;     // 評価コメント
-    uint256 timestamp;  // 評価日時
-    bool isSubmitted;   // 提出済みフラグ
-}
-
-struct Milestone {
-    string description;     // マイルストーン説明
-    uint256 deadline;       // 期限
-    uint256 amount;         // 対応報酬額
-    bool isCompleted;       // 完了フラグ
-    uint256 completedAt;    // 完了日時
-}
-
-// 主要状態変数
-address public partyA;  // 委託者（クライアント）
-address public partyB;  // 受託者（フリーランサー）
-uint256 public paymentAmount;
-string public workDescription;
-WorkStatus public workStatus;
-bool public escrowActive;
-bytes32 public escrowId;
+### **Installation**
+```bash
+npm install
 ```
 
-### **PaymentFlow.sol**
-```solidity
-enum PaymentType { OneTime, Installment, Conditional, Escrow }
-
-struct PaymentRecord {
-    address from;               // 支払い元アドレス
-    address to;                 // 支払い先アドレス
-    uint256 amount;             // 支払い金額（wei単位）
-    PaymentType paymentType;    // 支払い方式
-    uint256 timestamp;          // 支払い実行時刻
-    bytes32 transactionHash;    // トランザクション識別ハッシュ
-    bool isCompleted;           // 支払い完了フラグ
-    string description;         // 支払い内容の説明文
-}
-
-struct EscrowInfo {
-    address depositor;      // 預託者アドレス
-    address beneficiary;    // 受益者アドレス
-    uint256 amount;         // 預託金額
-    bool isActive;          // エスクロー有効フラグ
-    bool isReleased;        // 解放済みフラグ
-    uint256 depositTime;    // 預託時刻
-    uint256 releaseTime;    // 解放時刻
-}
-```
-
-### **StakingContract.sol**
-```solidity
-// 状態変数
-uint256 public totalStaked;
-mapping(address => uint256) public stakedBalance;
-mapping(address => uint256) public lastStakeTime;
-uint256 public rewardRate;
-mapping(address => uint256) public rewards;
-mapping(address => uint256) public contributionScore;  // 貢献度スコア
+### **Environment Setup**
+Create `.env` file:
+```env
+PRIVATE_KEY_DEPLOYER=your_deployer_private_key
+PRIVATE_KEY_USER1=your_user1_private_key
+PRIVATE_KEY_USER2=your_user2_private_key
 ```
 
 ---
 
-## 🔄 契約フロー
+## 📦 Contract Deployment
 
-### **基本的な契約実行フロー**
+### **Deploy OOP Architecture**
+```bash
+npx hardhat run scripts/freelance-contract-deploy.js --network gowenet
+```
 
-1. **Factory経由での契約作成**
-   ```solidity
-   function createContract(
-       address client,
-       address freelancer, 
-       uint256 amount,
-       string memory description
-   ) external payable returns (address contractAddress)
-   ```
+### **Deploy Monolithic Version (for comparison)**
+```bash
+npx hardhat run scripts/freelance-contract-mono-deploy.js --network gowenet
+```
 
-2. **契約認証・作業開始**
-   ```solidity
-   function authenticate() external onlyParties
-   // State: Created → InProgress
-   // WorkStatus: NotStarted → InProgress
-   ```
-
-3. **作業納品**
-   ```solidity
-   function deliverWork(
-       string memory deliverable,
-       bytes memory signature
-   ) external onlyFreelancer
-   // State: InProgress → Delivered
-   // WorkStatus: InProgress → UnderReview
-   ```
-
-4. **納品承認**
-   ```solidity
-   function approveDeliverable(
-       string memory deliverable,
-       bytes memory signature
-   ) external onlyClient
-   // WorkStatus: UnderReview → Completed
-   ```
-
-5. **支払い実行**
-   ```solidity
-   // エスクロー支払いの場合
-   function activateEscrow(string memory description) external payable onlyClient
-   function executePayment(bytes memory signature) external onlyClient
-   
-   // または直接支払い
-   function makeDirectPayment(bytes memory signature) external payable onlyClient
-   // State: Delivered → Paid
-   ```
-
-6. **契約完了**
-   ```solidity
-   function completeContract() external onlyParties
-   // State: Paid → Completed
-   // 貢献度スコアがStakingContractに記録される
-   ```
+**Output:** Deployment info saved to `deployment-info-oop.json`
 
 ---
 
-## 🔐 セキュリティ機能
+## 🧪 Testing & Load Testing
 
-### **アクセス制御**
-```solidity
-modifier onlyParties() {
-    require(msg.sender == partyA || msg.sender == partyB, "Not authorized party");
-    _;
-}
+### **Run Contract Test (OOP)**
+```bash
+# Single contract test
+npx hardhat run scripts/freelance-contract-test.js --network gowenet
 
-modifier onlyClient() {
-    require(msg.sender == partyA, "Only client can execute");
-    _;
-}
+# Load test with 30 contracts
+LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-test.js --network gowenet
 
-modifier onlyFreelancer() {
-    require(msg.sender == partyB, "Only freelancer can execute");
-    _;
-}
+# 1-hour load test (300 contracts, ~59 minutes)
+LOAD_TEST_COUNT=300 npx hardhat run scripts/freelance-contract-test.js --network gowenet
 ```
 
-### **状態検証**
-```solidity
-modifier validState(uint8 newStateValue) {
-    require(newStateValue <= uint8(State.Completed), "Invalid state value");
-    _;
-}
+### **Run Monolithic Test (for comparison)**
+```bash
+npx hardhat run scripts/freelance-contract-mono-test.js --network gowenet
 ```
 
-### **署名検証（SignatureVerifier）**
-```solidity
-function verifySignature(
-    bytes32 messageHash,
-    bytes memory signature,
-    address expectedSigner
-) external pure returns (bool)
-
-function verifySignatureWithPurpose(
-    bytes32 messageHash,
-    bytes memory signature,
-    address expectedSigner,
-    string memory purpose
-) external pure returns (bool)
-```
+**Test Workflow:**
+1. Create freelance contract via Factory
+2. Authenticate parties (client & freelancer)
+3. Deliver work with signature
+4. Approve deliverable
+5. Execute payment (1 GOWE)
+6. Complete contract
 
 ---
 
-## 💰 支払いシステム
+## 📊 Performance Metrics
 
-### **支払い方式**
-- **OneTime**: 一括払い
-- **Installment**: 分割払い（将来実装）
-- **Conditional**: 条件付き払い（将来実装）
-- **Escrow**: エスクロー払い
+### **Load Test Results (30 contracts)**
 
-### **エスクロー機能**
-```solidity
-// PaymentFlow.sol
-function depositEscrow(
-    address beneficiary,
-    string memory description
-) external payable returns (bytes32 escrowId)
+| Metric | Value |
+|--------|-------|
+| **Success Rate** | 100% (30/30) |
+| **Avg Execution Time** | 11.8 seconds/contract |
+| **Total Gas Used** | 117,876,669 |
+| **Avg Gas per Contract** | 3,929,222 |
+| **Payment per Contract** | 1 GOWE |
 
-function releaseEscrow(
-    bytes32 escrowId,
-    bytes memory signature
-) external
-```
+### **Gas Usage by Operation**
 
-### **直接支払い機能**
-```solidity
-function executeContractPayment(
-    address from,
-    address to,
-    uint256 amount,
-    PaymentType paymentType,
-    string memory description
-) external payable returns (bytes32)
-```
+| Operation | Gas Limit | Avg Gas Used |
+|-----------|-----------|--------------|
+| `createContract` | 5,000,000 | 3,161,368 |
+| `authenticate` | 500,000 | 149,699 |
+| `deliverWork` | 1,000,000 | 161,983 |
+| `approveDeliverable` | 500,000 | 65,615 |
+| `makeDirectPayment` | 800,000 | 308,348 |
+| `completeContract` | 600,000 | 82,208 |
+
+**Note:** Explicit gas limits required for reliable execution on Hardhat + GOWENET.
 
 ---
 
-## 🎯 ステーキング・貢献度システム
+## 🔧 Contract Modules
 
-### **ステーキング機能**
-```solidity
-function stake() external payable nonReentrant
-function unstake(uint256 _amount) external nonReentrant  
-function claimReward() external nonReentrant
-```
+### **1. ContractBase.sol**
+State management for contract lifecycle.
 
-### **貢献度スコア**
-```solidity
-function addContribution(address user, uint256 duration) external
-// 契約完了時にFreelanceContractから自動的に呼び出される
-// durationは契約期間（秒単位）
-```
+**States:**
+- `Created` → `InProgress` → `Delivered` → `Disputed` / `Paid` → `Completed`
 
-### **報酬計算**
-```solidity
-function calculateReward(address _user) public view returns (uint256) {
-    uint256 timeElapsed = block.timestamp.sub(lastStakeTime[_user]);
-    uint256 pending = timeElapsed.mul(stakedBalance[_user]).mul(rewardRate).div(1e18);
-    return rewards[_user].add(pending);
-}
-```
+**Key Functions:**
+- `setState(State _newState)` - Update contract state
+- `authorizeContract(address _contract)` - Grant permissions
 
 ---
 
-## 🏭 ファクトリーパターン
+### **2. FreelanceContract.sol**
+Main contract logic for freelance agreements.
 
-### **モジュール登録**
-```solidity
-function registerModules(
-    address _contractBase,
-    address _paymentFlow,
-    address _signatureVerifier
-) external onlyOwner
+**Key Features:**
+- Party authentication (client/freelancer)
+- Work delivery with signature verification
+- Milestone tracking
+- Rating system (1-5 stars)
 
-function setStakingModule(address _stakingModule) external onlyOwner
+**Key Functions:**
+- `authenticate()` - Authenticate contract parties
+- `deliverWork(string calldata _deliverable, bytes calldata _signature)` - Submit work
+- `approveDeliverable()` - Client approves work
+- `completeContract()` - Finalize contract
+
+---
+
+### **3. PaymentFlow.sol**
+Payment processing with escrow support.
+
+**Payment Types:**
+- `OneTime` - Direct one-time payment
+- `Installment` - Multi-stage payments
+- `Conditional` - Condition-based release
+- `Escrow` - Trustless escrow holding
+
+**Key Functions:**
+- `makeDirectPayment(address _to, string calldata _description)` - Direct payment
+- `depositEscrow(address _beneficiary)` - Deposit to escrow
+- `releaseEscrow(bytes32 _escrowId)` - Release escrow funds
+
+---
+
+### **4. SignatureVerifier.sol**
+ECDSA signature verification for secure operations.
+
+**Key Functions:**
+- `verifySignature(address _signer, bytes32 _messageHash, bytes calldata _signature)` - Verify signature
+- `getMessageHash(string calldata _message)` - Generate message hash
+- `getEthSignedMessageHash(bytes32 _messageHash)` - Apply Ethereum prefix
+
+---
+
+### **5. StakingContract.sol**
+GOWE token staking and contribution scoring.
+
+**Key Functions:**
+- `stake()` - Stake GOWE tokens
+- `unstake(uint256 _amount)` - Withdraw staked tokens
+- `recordContribution(address _contributor, uint256 _score)` - Record contribution
+
+---
+
+### **6. FreelanceContractFactory.sol**
+Dynamic contract instance creation using Factory pattern.
+
+**Key Functions:**
+- `createContract(address _partyA, address _partyB, uint256 _paymentAmount, string calldata _workDescription)` - Create new contract instance
+- `getContractCount()` - Get total created contracts
+- `getContractsByParty(address _party)` - Get contracts by participant
+
+---
+
+## 📁 Project Structure
+
 ```
-
-### **契約作成**
-```solidity
-function createContract(
-    address client,
-    address freelancer,
-    uint256 amount,
-    string memory description
-) external payable returns (address contractAddress)
-```
-
-### **統計情報**
-```solidity
-uint256 public totalContractsCreated;
-uint256 public totalContractValue;
-mapping(uint256 => address) public contracts;
-mapping(address => uint256[]) public clientContracts;
-mapping(address => uint256[]) public freelancerContracts;
+gowenet-contract/
+├── contracts/
+│   ├── ContractBase.sol
+│   ├── FreelanceContract.sol
+│   ├── FreelanceContractFactory.sol
+│   ├── FreelanceContractMonolithic.sol
+│   ├── PaymentFlow.sol
+│   ├── SignatureVerifier.sol
+│   ├── StakingContract.sol
+│   └── ValidatorIncentives.sol
+├── scripts/
+│   ├── freelance-contract-deploy.js      # Deploy OOP contracts
+│   ├── freelance-contract-test.js        # Test OOP contracts
+│   ├── freelance-contract-mono-deploy.js # Deploy monolithic version
+│   └── freelance-contract-mono-test.js   # Test monolithic version
+├── hardhat.config.js
+├── package.json
+└── README.md
 ```
 
 ---
 
-## 📊 モジュール間連携
+## 🌐 Network Configuration
 
-### **インターフェース定義**
-```solidity
-// FreelanceContract.sol内で定義
-interface IContractBase {
-    function changeState(uint8 newState) external;
-    function getState() external view returns (uint8);
-    function getContractInfo() external view returns (address, address, uint256, uint256, uint8, uint256);
-}
+**GOWENET Blockchain:**
+- **Chain ID:** 98888
+- **Currency:** GOWE
+- **RPC URL:** `http://192.168.3.86:9654/ext/bc/2tGwFCjwr3w6fW774ytz982h5Th9eiALrKFanmBKZjxQSqTBxW/rpc`
+- **Block Time:** ~2 seconds
+- **Consensus:** Proof of Stake (4 validators)
 
-interface IPaymentFlow {
-    enum PaymentType { OneTime, Installment, Conditional, Escrow }
-    function executeContractPayment(...) external payable returns (bytes32);
-    function depositEscrow(...) external payable returns (bytes32);
-    function releaseEscrow(...) external;
-}
-
-interface IStakingContract {
-    function addContribution(address user, uint256 duration) external;
-}
-
-interface ISignatureVerifier {
-    function verifySignature(...) external returns (bool);
-    function verifySignatureWithPurpose(...) external returns (bool);
-}
-```
+**Test Accounts:**
+- **Deployer:** `0x8464d8E79A31C20bf8f909EF0Ab334744Ed6C2eA`
+- **Client (User1):** `0x9740cfc1A67B5B3A5C0eA6Eea04C10923F435c9d`
+- **Freelancer (User2):** `0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6`
 
 ---
 
-## 🔗 イベント
+## 🔍 Known Issues & Solutions
 
-### **主要イベント**
-```solidity
-// ContractBase.sol
-event StateChanged(State oldState, State newState, address indexed changedBy, uint256 timestamp);
-event ContractAuthorized(address indexed contractAddr, bool isAuthorized);
+### **Issue: `deliverWork` Reverts During Tests**
+**Solution:** Added explicit gas limits to all transaction calls in test scripts. Gas estimation is unreliable for external contract calls in Hardhat environment.
 
-// FreelanceContract.sol
-event WorkStatusChanged(WorkStatus oldStatus, WorkStatus newStatus, address indexed changedBy);
-event DeliverableSubmitted(string deliverable, address indexed submittedBy, uint256 timestamp);
-event DeliverableApproved(string deliverable, address indexed approvedBy, uint256 timestamp);
-event EscrowActivated(address indexed activatedBy, uint256 amount, bytes32 escrowId);
-event PaymentCompleted(bytes32 indexed paymentId, address indexed from, address indexed to, uint256 amount);
-
-// PaymentFlow.sol  
-event PaymentExecuted(address indexed from, address indexed to, uint256 amount, PaymentType paymentType, bytes32 indexed paymentId);
-event EscrowDeposited(address indexed depositor, address indexed beneficiary, uint256 amount, bytes32 indexed escrowId);
-event EscrowReleased(address indexed beneficiary, uint256 amount, bytes32 indexed escrowId);
-
-// StakingContract.sol
-event Staked(address indexed user, uint256 amount);
-event ContributionAdded(address indexed user, uint256 scoreAdded);
-```
+### **Issue: Signature Verification Always Returns `true`**
+**Status:** Under investigation. SignatureVerifier unit tests pass, but integration may need adjustment.
 
 ---
 
-## 🛠️ 使用技術
+## 📝 License
 
-### **OpenZeppelinライブラリ**
-- `@openzeppelin/contracts/access/Ownable.sol`
-- `@openzeppelin/contracts/security/ReentrancyGuard.sol`  
-- `@openzeppelin/contracts/utils/Counters.sol`
-- `@openzeppelin/contracts/utils/math/SafeMath.sol`
-- `@openzeppelin/contracts/utils/cryptography/ECDSA.sol`
-
-### **Solidity機能**
-- Pragma: `^0.8.0`
-- Enum、Struct、Mapping
-- Modifier、Event
-- Interface、継承
-- External/Internal関数
+MIT License
 
 ---
 
-## 🔍 比較実装
+## 👥 Contributors
 
-### **モジュラー vs モノリシック**
+Developed for GOWENET research project - Avalanche L1 Subnet-based decentralized governance and contract system.
 
-**モジュラー実装**（推奨）:
-- 複数のコントラクトファイル
-- 責任の分離
-- 再利用可能なモジュール
-- 独立したテスト・デプロイ
-
-**モノリシック実装**（比較用）:
-- `FreelanceContractMonolithic.sol`
-- すべての機能を1つのコントラクトに統合
-- 従来型のシンプルなアーキテクチャ
-
----
-
-## 📄 ライセンス
-
-このプロジェクトはMITライセンスの下でライセンスされています。
-
----
-
-## 💻 開発環境
-
-このスマートコントラクトは以下の環境で動作します：
-
-- **Solidity**: ^0.8.0
-- **OpenZeppelin Contracts**: 最新版
-- **ネットワーク**: Avalanche L1 Subnet (GOWENET)
-- **通貨**: GOWE（ネイティブトークン）
-
-すべてのコントラクトは実際のRaspberry Piマルチノード環境でテスト済みです。
