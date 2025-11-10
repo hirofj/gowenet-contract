@@ -3,7 +3,7 @@
 # GOWENET OOP Architecture Load Test Script
 # 300 contracts over 1 hour (60 minutes)
 
-LOG_FILE="data/test_oop_$(date +%Y%m%d%H%M).log"
+LOG_FILE="logs/test_oop_$(date +%Y%m%d%H%M).log"
 
 echo "🚀 Starting GOWENET OOP Load Test"
 echo "   Contracts: 300"

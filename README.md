@@ -94,8 +94,8 @@ LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-mono-test.js --net
 6. Complete contract
 
 **Output Files:**
-- OOP: `data/test_oop_YYYYMMDDHHMM.json`
-- Monolithic: `data/test_mono_YYYYMMDDHHMM.json`
+- JSON Data: `data/test_{architecture}_YYYYMMDDHHMM.json`
+- Console Logs: `logs/test_{architecture}_YYYYMMDDHHMM.log` (when using goTest*.sh)
 
 ---
 
@@ -223,18 +223,18 @@ gowenet-contract/
 │   ├── freelance-contract-mono-test.js       # Test monolithic version (with JSON output)
 │   ├── deploy_oop.json                       # OOP deployment info (generated)
 │   └── deploy_mono.json                      # Monolithic deployment info (generated)
-├── data/                                      # Test results (JSON + logs)
+├── data/                                      # Test result data (JSON)
 │   ├── test_oop_YYYYMMDDHHMM.json
+│   └── test_mono_YYYYMMDDHHMM.json
+├── logs/                                      # Test execution logs
 │   ├── test_oop_YYYYMMDDHHMM.log
-│   ├── test_mono_YYYYMMDDHHMM.json
-├── hardhat.config.js
+│   └── test_mono_YYYYMMDDHHMM.log
 │   └── test_mono_YYYYMMDDHHMM.log
 ├── package.json
 └── README.md
 ```
 
 ---
-
 ## 📋 File Organization
 
 ### Deployment Info
@@ -245,22 +245,23 @@ Deployment information is stored as fixed files in `scripts/`:
 These files are overwritten on each deployment and contain contract addresses and configuration.
 
 ### Test Results
-Test results follow this naming convention in `data/`:
+Test results are separated into two directories:
 
+**Data (JSON)**: `data/` - Structured test result data for analysis
 ```
-{type}_{architecture}_{YYYYMMDDHHMM}.{ext}
+test_{architecture}_{YYYYMMDDHHMM}.json
 ```
 
-- **type**: `test`
-- **architecture**: `oop` or `mono`
-- **timestamp**: `YYYYMMDDHHMM` format (e.g., `202511091430`)
-- **extension**: `.json` for structured data, `.log` for console output
+**Logs**: `logs/` - Console output and execution logs
+```
+test_{architecture}_{YYYYMMDDHHMM}.log
+```
 
 **Examples:**
-- `data/test_oop_202511091430.json` - OOP test results (JSON)
-- `data/test_oop_202511091430.log` - OOP test console output
-- `data/test_mono_202511091605.json` - Monolithic test results (JSON)
-- `data/test_mono_202511091605.log` - Monolithic test console output
+- `data/test_oop_202511091430.json` - OOP test results (structured JSON)
+- `logs/test_oop_202511091430.log` - OOP test console output
+- `data/test_mono_202511091605.json` - Monolithic test results (structured JSON)
+- `logs/test_mono_202511091605.log` - Monolithic test console output
 
 ## 📊 JSON Output Format
 
