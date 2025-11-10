@@ -24,15 +24,18 @@ async function main() {
     
     // デプロイ情報読み込み
     const fs = require('fs');
+    // 最新のデプロイ情報ファイルを自動検出
     let deploymentInfo;
     try {
-        deploymentInfo = JSON.parse(fs.readFileSync('logs/deploy_oop_202511081546.json', 'utf8'));
+        const deployFile = "scripts/deploy_oop.json";
+        console.log(`📂 Using deployment file: ${deployFile}`);
+        deploymentInfo = JSON.parse(fs.readFileSync(deployFile, "utf8"));
     } catch (error) {
-        console.error("❌ deployment-info-oop.json が見つかりません");
-        console.error("   先にデプロイスクリプトを実行してください: npx hardhat run scripts/deploy-oop.js --network gowenet");
+        console.error("❌ デプロイ情報ファイルが見つかりません: scripts/deploy_oop.json");
+        console.error("   先にデプロイスクリプトを実行してください:");
+        console.error("   npx hardhat run scripts/freelance-contract-deploy.js --network gowenet");
         process.exit(1);
     }
-    
     // アカウント取得
     const [deployer, user1, user2, user3, user4, user5] = await hre.ethers.getSigners();
     
@@ -533,7 +536,7 @@ async function main() {
         }
     };
     
-    const resultFileName = `logs/test_oop_${timestamp}.json`;
+    const resultFileName = `data/test_oop_${timestamp}.json`;
     fs.writeFileSync(resultFileName, JSON.stringify(structuredData, null, 2));
     console.log(`\n💾 詳細結果保存: ${resultFileName}`);
     

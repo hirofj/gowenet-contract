@@ -368,7 +368,7 @@ try {
     };
     
     const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
-    const filename = `logs/deploy_oop_${timestamp}.json`;
+    const filename = `scripts/deploy_oop.json`;
     
     try {
         fs.writeFileSync(filename, JSON.stringify(deploymentInfo, null, 2));

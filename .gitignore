@@ -34,3 +34,9 @@ deployment-info-*.json
 test-results-*.json
 
 remappings.txt
+
+# Data directory (test results)
+data/
+
+# Deployment info (per environment)
+scripts/deploy_*.json

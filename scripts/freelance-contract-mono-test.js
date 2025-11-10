@@ -272,41 +272,100 @@ async function main() {
     }
     
     // Save results
-    const resultsFile = `logs/test_mono_${new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12)}.json`;
-    const resultsData = {
-        testType: "monolithic-load-test",
-        timestamp: new Date().toISOString(),
-        configuration: {
-            loadTestCount: LOAD_TEST_COUNT,
+
+    // ========================================
+    // Save Results in Structured JSON Format  
+    // ========================================
+    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
+    const testId = `mono_load_test_${LOAD_TEST_COUNT}_${new Date().toISOString().slice(0,19).replace(/[-:]/g,'').replace('T','_')}`;
+    
+    // Calculate execution time statistics
+    const executionTimes = testResults.filter(r => r.success).map(r => r.executionTime);
+    const avgExecutionTime = executionTimes.length > 0 
+        ? Math.round(executionTimes.reduce((sum, t) => sum + t, 0) / executionTimes.length)
+        : 0;
+    const minExecutionTime = executionTimes.length > 0 ? Math.min(...executionTimes) : 0;
+    const maxExecutionTime = executionTimes.length > 0 ? Math.max(...executionTimes) : 0;
+    const stdDev = executionTimes.length > 1 
+        ? Math.round(Math.sqrt(executionTimes.reduce((sum, t) => sum + Math.pow(t - avgExecutionTime, 2), 0) / executionTimes.length))
+        : 0;
+    
+    // Calculate average gas by operation
+    const avgGasByOperation = {};
+    Object.entries(gasUsageByOperation).forEach(([op, gasArray]) => {
+        if (gasArray.length > 0) {
+            const total = gasArray.reduce((sum, val) => sum + val, 0n);
+            avgGasByOperation[op] = Math.round(Number(total) / gasArray.length);
+        }
+    });
+    
+    const structuredData = {
+        testMetadata: {
+            testId: testId,
+            startTime: new Date(startTime).toISOString(),
+            endTime: new Date().toISOString(),
+            architecture: "monolithic",
+            targetContracts: LOAD_TEST_COUNT,
             targetTPS: TARGET_TPS,
-            intervalMs: INTERVAL_MS
+            intervalMs: INTERVAL_MS,
+            gasLimitsEnabled: true
         },
-        results: {
-            successCount,
-            failureCount,
-            successRate: (successCount / LOAD_TEST_COUNT * 100).toFixed(2) + "%",
-            totalTimeSeconds: totalTime,
-            avgTimePerContract: (totalTime / LOAD_TEST_COUNT).toFixed(2),
-            measuredTPS: (LOAD_TEST_COUNT / totalTime).toFixed(2)
+        deployment: {
+            deployer: "0x8464d8E79A31C20bf8f909EF0Ab334744Ed6C2eA",
+            contracts: {
+                monolithicFactory: "per_contract_deployment"
+            },
+            accounts: {
+                baseClient: "0x9740cfc1A67B5B3A5C0eA6Eea04C10923F435c9d",
+                baseFreelancer: "0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6"
+            }
         },
-        gas: {
-            totalGasUsed: totalGasUsed.toString(),
-            avgGasPerContract: successCount > 0 ? (totalGasUsed / BigInt(successCount)).toString() : "N/A",
-            byOperation: successCount > 0 ? Object.fromEntries(
-                Object.entries(gasUsageByOperation).map(([op, arr]) => [
-                    op,
-                    {
-                        count: arr.length,
-                        total: arr.reduce((sum, val) => sum + val, 0n).toString(),
-                        avg: (arr.reduce((sum, val) => sum + val, 0n) / BigInt(arr.length)).toString()
-                    }
-                ])
-            ) : {}
-        },
-        testResults
+        contracts: testResults.filter(r => r.success).map((r, idx) => {
+            const contractGas = {};
+            Object.entries(gasUsageByOperation).forEach(([op, arr]) => {
+                if (arr[idx] !== undefined) {
+                    contractGas[op] = Number(arr[idx]);
+                }
+            });
+            const totalGas = Object.values(contractGas).reduce((sum, val) => sum + val, 0);
+            
+            return {
+                id: r.contractIndex,
+                contractAddress: r.contractAddress,
+                timestamp: new Date(startTime + (r.contractIndex - 1) * INTERVAL_MS).toISOString(),
+                client: "0x9740cfc1A67B5B3A5C0eA6Eea04C10923F435c9d",
+                freelancer: "0x3BE34ca51D35094De7549731e3385A04d3cF2Fe6",
+                executionTimeMs: r.executionTime,
+                gas: Object.keys(contractGas).length > 0 
+                    ? { ...contractGas, total: totalGas }
+                    : { total: totalGas },
+                success: true
+            };
+        }),
+        executionSummary: {
+            endTime: new Date().toISOString(),
+            totalDurationSeconds: Math.round(totalTime),
+            totalContracts: LOAD_TEST_COUNT,
+            successfulContracts: successCount,
+            failedContracts: failureCount,
+            successRate: parseFloat((successCount / LOAD_TEST_COUNT * 100).toFixed(2)),
+            actualTPS: parseFloat((LOAD_TEST_COUNT / totalTime).toFixed(2)),
+            executionTime: {
+                average: avgExecutionTime,
+                min: minExecutionTime,
+                max: maxExecutionTime,
+                standardDeviation: stdDev
+            },
+            gas: {
+                totalUsed: totalGasUsed.toString(),
+                avgPerContract: successCount > 0 ? Math.round(Number(totalGasUsed) / successCount) : 0,
+                byStep: avgGasByOperation
+            }
+        }
     };
     
-    fs.writeFileSync(resultsFile, JSON.stringify(resultsData, null, 2));
+    const resultsFile = `data/test_mono_${timestamp}.json`;
+    fs.writeFileSync(resultsFile, JSON.stringify(structuredData, null, 2));
     console.log(`\n💾 Results saved to: ${resultsFile}`);
     
     console.log("\n" + "=".repeat(60));

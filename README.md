@@ -60,8 +60,8 @@ npx hardhat run scripts/freelance-contract-mono-deploy.js --network gowenet
 ```
 
 **Output Files:** 
-- OOP: `logs/deploy_oop_YYYYMMDDHHMM.json`
-- Monolithic: `logs/deploy_mono_YYYYMMDDHHMM.json`
+- OOP: `scripts/deploy_oop.json`
+- Monolithic: `scripts/deploy_mono.json`
 
 ---
 
@@ -94,8 +94,8 @@ LOAD_TEST_COUNT=30 npx hardhat run scripts/freelance-contract-mono-test.js --net
 6. Complete contract
 
 **Output Files:**
-- OOP: `logs/test_oop_YYYYMMDDHHMM.json`
-- Monolithic: `logs/test_mono_YYYYMMDDHHMM.json`
+- OOP: `data/test_oop_YYYYMMDDHHMM.json`
+- Monolithic: `data/test_mono_YYYYMMDDHHMM.json`
 
 ---
 
@@ -220,38 +220,47 @@ gowenet-contract/
 │   ├── freelance-contract-deploy.js          # Deploy OOP contracts
 │   ├── freelance-contract-oop-test.js        # Test OOP contracts (with JSON output)
 │   ├── freelance-contract-mono-deploy.js     # Deploy monolithic version
-│   └── freelance-contract-mono-test.js       # Test monolithic version (with JSON output)
-├── logs/                                      # Test results and deployment info
-│   ├── deploy_oop_YYYYMMDDHHMM.json
-│   ├── deploy_mono_YYYYMMDDHHMM.json
+│   ├── freelance-contract-mono-test.js       # Test monolithic version (with JSON output)
+│   ├── deploy_oop.json                       # OOP deployment info (generated)
+│   └── deploy_mono.json                      # Monolithic deployment info (generated)
+├── data/                                      # Test results (JSON + logs)
 │   ├── test_oop_YYYYMMDDHHMM.json
-│   └── test_mono_YYYYMMDDHHMM.json
+│   ├── test_oop_YYYYMMDDHHMM.log
+│   ├── test_mono_YYYYMMDDHHMM.json
 ├── hardhat.config.js
+│   └── test_mono_YYYYMMDDHHMM.log
 ├── package.json
 └── README.md
 ```
 
 ---
 
-## 📋 Log File Naming Convention
+## 📋 File Organization
 
-All deployment and test output files follow this standardized format:
+### Deployment Info
+Deployment information is stored as fixed files in `scripts/`:
+- `scripts/deploy_oop.json` - OOP architecture deployment
+- `scripts/deploy_mono.json` - Monolithic architecture deployment
+
+These files are overwritten on each deployment and contain contract addresses and configuration.
+
+### Test Results
+Test results follow this naming convention in `data/`:
 
 ```
 {type}_{architecture}_{YYYYMMDDHHMM}.{ext}
 ```
 
-- **type**: `deploy` or `test`
+- **type**: `test`
 - **architecture**: `oop` or `mono`
 - **timestamp**: `YYYYMMDDHHMM` format (e.g., `202511091430`)
-- **extension**: `.json` for structured data, `.log` for text logs
+- **extension**: `.json` for structured data, `.log` for console output
 
 **Examples:**
-- `logs/deploy_oop_202511081546.json` - OOP deployment info
-- `logs/test_mono_202511091605.json` - Monolithic test results
-- `logs/test_oop_202511091414.log` - OOP test execution log
-
----
+- `data/test_oop_202511091430.json` - OOP test results (JSON)
+- `data/test_oop_202511091430.log` - OOP test console output
+- `data/test_mono_202511091605.json` - Monolithic test results (JSON)
+- `data/test_mono_202511091605.log` - Monolithic test console output
 
 ## 📊 JSON Output Format
 
