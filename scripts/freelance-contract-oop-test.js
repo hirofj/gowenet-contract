@@ -455,7 +455,7 @@ async function main() {
 
     // 新しいJSON形式でデータを構造化
     const testId = `load_test_${LOAD_TEST_COUNT}_${new Date().toISOString().slice(0,19).replace(/[-:]/g,'').replace('T','_')}`;
-    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
+    const timestamp = new Date(new Date().getTime() + 9*60*60*1000).toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12); // JST
     
     const structuredData = {
         testMetadata: {

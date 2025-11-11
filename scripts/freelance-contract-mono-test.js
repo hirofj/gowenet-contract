@@ -276,7 +276,7 @@ async function main() {
     // ========================================
     // Save Results in Structured JSON Format  
     // ========================================
-    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);
+    const timestamp = new Date(new Date().getTime() + 9*60*60*1000).toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12); // JST
     const testId = `mono_load_test_${LOAD_TEST_COUNT}_${new Date().toISOString().slice(0,19).replace(/[-:]/g,'').replace('T','_')}`;
     
     // Calculate execution time statistics
